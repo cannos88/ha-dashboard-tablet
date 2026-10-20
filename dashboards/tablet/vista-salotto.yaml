@@ -98,7 +98,7 @@
       entity: media_player.sony_bravia_tv
       triggers_update:
         - media_player.decoder_salotto
-        - media_player.fire_tv_192_168_0_102
+        - media_player.fire_tv_salotto
         - timer.tv_timer
         - sensor.time_2
       hold_action:
@@ -119,7 +119,7 @@
             var off = function (s) { return !s || ['off', 'unavailable', 'unknown', 'standby'].indexOf(s.state) >= 0; };
             var on = !off(e);
             var dec = states['media_player.decoder_salotto'];
-            var fire = states['media_player.fire_tv_192_168_0_102'];
+            var fire = states['media_player.fire_tv_salotto'];
             var src = on ? (e.attributes.source || '') : '';
             var APP = {'com.amazon.tv.launcher': 'Home', 'com.netflix.ninja': 'Netflix',
                        'com.disney.disneyplus': 'Disney+', 'com.amazon.avod': 'Prime Video',
@@ -226,9 +226,9 @@
               etichetta2: ''
               largo: true
             custom_fields:
-              b1: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:home-outline', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_192_168_0_102}, data: {command: HOME}}}}
-              b2: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:arrow-left', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_192_168_0_102}, data: {command: BACK}}}}
-              b3: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:play-pause', colore: '#FFB547'}, tap_action: {action: call-service, service: media_player.media_play_pause, target: {entity_id: media_player.fire_tv_192_168_0_102}}}}
+              b1: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:home-outline', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_salotto}, data: {command: HOME}}}}
+              b2: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:arrow-left', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_salotto}, data: {command: BACK}}}}
+              b3: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:play-pause', colore: '#FFB547'}, tap_action: {action: call-service, service: media_player.media_play_pause, target: {entity_id: media_player.fire_tv_salotto}}}}
               t:
                 card:
                   type: custom:button-card

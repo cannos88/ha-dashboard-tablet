@@ -86,6 +86,9 @@ Home Assistant 2026.x, più queste componenti da HACS:
 - [washing-machine-card](https://github.com/sionetta/wm_animated_ha_card): io uso una copia
   locale con la traduzione italiana e i tipi `induction` e `aircon`.
 
+Le immagini delle radio stanno in `/config/www/radio/` e non sono nella repo: mettici le tue,
+oppure cambia i percorsi in `vista-media.yaml`.
+
 ## Installazione
 
 1. Copia `dashboards/` in `/config/dashboards/`, `themes/tablet_bento.yaml` nella cartella dei
@@ -128,6 +131,43 @@ node valida.mjs dashboard-tablet              # controlla che la dashboard live 
 ```
 
 Con l'anteprima puoi provare una modifica sul vero HA senza toccare il pannello a parete.
+
+## Crediti
+
+Questa dashboard non sarebbe esistita senza il lavoro di altri. Grazie a:
+
+**Home Assistant e card della community**
+- [Home Assistant](https://www.home-assistant.io/)
+- [button-card](https://github.com/custom-cards/button-card) (custom-cards): su questa card è costruita
+  quasi ogni tessera
+- [layout-card](https://github.com/thomasloven/lovelace-layout-card),
+  [card-mod](https://github.com/thomasloven/lovelace-card-mod) e
+  [browser_mod](https://github.com/thomasloven/hass-browser_mod) di Thomas Lovén
+- [kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (NemesisRE)
+- [mini-graph-card](https://github.com/kalkih/mini-graph-card) e
+  [mini-media-player](https://github.com/kalkih/mini-media-player) di Karl Kihlström
+- [calendar-card-pro](https://github.com/alexpfau/calendar-card-pro) (alexpfau)
+- [WebRTC Camera](https://github.com/AlexxIT/WebRTC) e [go2rtc](https://github.com/AlexxIT/go2rtc)
+  di Alexey Khit
+- [Animated Washing Machine Card](https://github.com/sionetta/wm_animated_ha_card) (sionetta): le
+  animazioni degli elettrodomestici, in stile Oikos
+
+**Font e icone**
+- [Inter](https://rsms.me/inter/) (Rasmus Andersson),
+  [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans) (Tokotype) e
+  [JetBrains Mono](https://www.jetbrains.com/lp/mono/): licenza SIL Open Font License, caricati da
+  Google Fonts
+- [Material Design Icons](https://pictogrammers.com/library/mdi/) (Pictogrammers)
+
+**Integrazioni dietro le entità.** Le entità vengono da integrazioni ufficiali o della community:
+[Frigate](https://frigate.video/) per la presenza dalle telecamere, Roborock, Netatmo, Shelly,
+Android TV / Fire TV, Spotify, Plant e dispositivi Zigbee (Aqara e altri).
+
+**Disegni e loghi.** Le illustrazioni SVG di cancelli, garage, pompa di calore, accumulo e meteo
+sono originali di questo progetto. I loghi delle radio (`/local/radio/*.webp`) appartengono alle
+rispettive emittenti e non sono inclusi nella repo.
+
+Il design è stato sviluppato con [Claude Code](https://claude.com/claude-code).
 
 ## Licenza
 
