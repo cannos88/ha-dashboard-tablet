@@ -1,0 +1,105 @@
+# GENERATO da genera-stanze.py: popup della stanza "Giardino".
+# Non modificare qui: cambia la tabella STANZE e rilancia lo script.
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+- type: vertical-stack
+  cards:
+  - type: custom:button-card
+    template: sezione
+    entity: switch.shelly_lucibbq_channel_1
+    triggers_update:
+    - switch.presazanzareporticato
+    variables:
+      titolo: Luci
+      nota: |-
+        [[[
+          var L = ['switch.shelly_lucibbq_channel_1', 'switch.presazanzareporticato'];
+          var n = 0;
+          for (var i = 0; i < L.length; i++) if (states[L[i]] && states[L[i]].state === 'on') n++;
+          return n === 0 ? 'tutto spento' : (n === 1 ? '1 accesa' : n + ' accese');
+        ]]]
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: custom:button-card
+      template: luce_riga
+      entity: switch.shelly_lucibbq_channel_1
+      variables:
+        nome: Luci BBQ
+        icona: mdi:string-lights
+    - type: custom:button-card
+      template: luce_riga
+      entity: switch.presazanzareporticato
+      variables:
+        nome: Zanzariera porticato
+        icona: mdi:bug-outline
+  - type: custom:button-card
+    template: sezione
+    variables:
+      titolo: Musica
+  - type: custom:mini-media-player
+    entity: media_player.casse_giardino_2
+    artwork: default
+    group: true
+    card_mod:
+      style: |
+        :host { display: block; height: 100%; }
+        ha-card {
+          border-radius: 22px !important;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          --mmp-accent-color: #FF7EB6;
+          --mmp-icon-color: #8A93A0;
+          --mmp-icon-active-color: #FF7EB6;
+          --mmp-text-color: #EEF0F3;
+          --mmp-media-cover-info-color: #EEF0F3;
+          --primary-color: #FF7EB6;
+          --mdc-theme-primary: #FF7EB6;
+          --mdc-theme-secondary: #FF7EB6;
+          --paper-slider-active-color: #FF7EB6;
+          --paper-slider-knob-color: #FF7EB6;
+          --ha-slider-background: #2A323D;
+          --md-sys-color-surface-container-highest: #2A323D;
+          --md-sys-color-primary: #FF7EB6;
+          --paper-slider-container-color: #2A323D;
+          --mmp-unused-icon-color: #5B6470;
+          --md-slider-inactive-track-color: #2A323D;
+          --slider-track-color: #2A323D;
+          --disabled-color: #2A323D;
+          height: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          border: 1px solid rgba(255,255,255,.035) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+          overflow: hidden;
+          {% if is_state(config.entity, 'playing') %}
+          background: #2A1622 !important;
+          {% else %}
+          background: #12161B !important;
+          {% endif %}
+          padding: 4px 4px 2px;
+        }
+- type: vertical-stack
+  cards:
+  - type: custom:button-card
+    template: sezione
+    variables:
+      titolo: Ambiente
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: custom:button-card
+      template: dato_stanza
+      entity: sensor.casa_rotondo_salotto_esterno_temperature
+      variables:
+        nome: Temperatura esterna
+        tipo: temperatura

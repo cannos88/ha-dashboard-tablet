@@ -1,0 +1,357 @@
+# ===========================================================================
+# VISTA "Stanze" - dashboard Tablet
+# GENERATO da genera-stanze.py: non modificare qui, cambia la tabella STANZE
+# nello script e rilancialo.
+#
+# Undici stanze in quattro colonne sotto un'intestazione che fa da riepilogo.
+# I parametri della tessera (luci, clima, sonde, alim/alimDa) sono gli stessi
+# della dashboard Mobile. Al tocco si apre il popup della stanza (browser_mod),
+# costruito con i template del tablet.
+# ===========================================================================
+- !include 'rail.yaml'
+- !include 'testata.yaml'
+- type: vertical-stack
+  view_layout:
+    grid-column: 3 / span 12
+    grid-row: 3
+  cards:
+  - type: custom:button-card
+    template: sezione
+    entity: sensor.luci_accese
+    triggers_update:
+    - climate.condizionatore_salotto
+    - climate.condizionatore_luca
+    - climate.condizionatore_sofia
+    - climate.condizionatore_matrimoniale
+    - climate.condizionatore_sottotetto
+    variables:
+      titolo: Tutta la casa
+      nota: |-
+        [[[
+          var C = ['climate.condizionatore_luca', 'climate.condizionatore_sofia',
+                   'climate.condizionatore_matrimoniale', 'climate.condizionatore_salotto',
+                   'climate.condizionatore_sottotetto'];
+          var a = 0;
+          for (var i = 0; i < C.length; i++) {
+            var s = states[C[i]];
+            if (s && ['off', 'unavailable', 'unknown'].indexOf(s.state) < 0) a++;
+          }
+          var n = entity ? Number(entity.state) : 0;
+          if (isNaN(n)) n = 0;
+          return (n === 0 ? 'nessuna luce accesa' : (n === 1 ? '1 luce accesa' : n + ' luci accese')) +
+            ' \u00B7 ' + (a === 0 ? 'nessun clima acceso' : (a === 1 ? '1 clima acceso' : a + ' climi accesi'));
+        ]]]
+  - type: grid
+    columns: 4
+    square: false
+    cards:
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: light.luci_interne_cucina
+      triggers_update:
+      - light.luci_tavolo_cucina
+      - media_player.cucina_2
+      - sensor.aqaracucina_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Cucina
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-cucina.yaml'
+      variables:
+        nome: Cucina
+        icona: <path d="M4 4h16v6H4zM7 14v6M12 14v6M17 14v6"/>
+        colore: '#FF9F5A'
+        apre: true
+        luci:
+        - light.luci_interne_cucina
+        - light.luci_tavolo_cucina
+        media:
+        - media_player.cucina_2
+        sonde:
+        - sensor.aqaracucina_temperature
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: climate.condizionatore_salotto
+      triggers_update:
+      - light.luci_salotto
+      - light.shellyplus1_80646fc7eaec_switch_0
+      - light.luce_tavolo_salotto
+      - light.led_salotto
+      - light.led_divano_2
+      - light.led_tv_salotto
+      - media_player.salotto_2
+      - sensor.aqarasalotto_temperature
+      - sensor.netatmo_salotto_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Salotto
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-salotto.yaml'
+      variables:
+        nome: Salotto
+        icona: <rect x="3" y="10" width="18" height="8" rx="2"/><path d="M6 10V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/>
+        colore: '#F5B53D'
+        apre: true
+        luci:
+        - light.luci_salotto
+        - light.shellyplus1_80646fc7eaec_switch_0
+        - light.luce_tavolo_salotto
+        - light.led_salotto
+        - light.led_divano_2
+        - light.led_tv_salotto
+        media:
+        - media_player.salotto_2
+        sonde:
+        - sensor.aqarasalotto_temperature
+        - sensor.netatmo_salotto_temperature
+        clima: climate.condizionatore_salotto
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: light.luce_bagno_giu
+      triggers_update:
+      - sensor.aqarabagnogiu_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Bagno di sotto
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-bagno-giu.yaml'
+      variables:
+        nome: Bagno di sotto
+        icona: <path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM7 12V6a2 2 0 0 1 4 0"/>
+        colore: '#5CC8FF'
+        apre: true
+        luci:
+        - light.luce_bagno_giu
+        sonde:
+        - sensor.aqarabagnogiu_temperature
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: switch.shelly_lucibbq_channel_1
+      triggers_update:
+      - media_player.casse_giardino_2
+      - sensor.casa_rotondo_salotto_esterno_temperature
+      - switch.presazanzareporticato
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Giardino
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-giardino.yaml'
+      variables:
+        nome: Giardino
+        icona: <path d="M12 20v-7M12 13c-4 0-6-3-6-6 4 0 6 2 6 6zM12 13c4 0 6-3 6-6-4 0-6 2-6 6z"/>
+        colore: '#6FD39B'
+        apre: true
+        luci:
+        - switch.shelly_lucibbq_channel_1
+        media:
+        - media_player.casse_giardino_2
+        sonde:
+        - sensor.casa_rotondo_salotto_esterno_temperature
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: climate.condizionatore_matrimoniale
+      triggers_update:
+      - light.luce_letto_anna
+      - light.luce_letto_marco
+      - light.camera_matrimoniale_luce_matrimoniale_luce_matrimoniale
+      - media_player.decoder_camera
+      - sensor.aqaracameramatrimoniale_temperature
+      - sensor.netatmo_camera_temperature
+      - sensor.valvolatermostaticamatrimoniale_local_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Camera matrimoniale
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-matrimoniale.yaml'
+      variables:
+        nome: Camera matrimoniale
+        icona: <path d="M3 18v-9M3 13h18v5M7 10h4v3H7z"/>
+        colore: '#B79CFF'
+        apre: true
+        luci:
+        - light.luce_letto_anna
+        - light.luce_letto_marco
+        - light.camera_matrimoniale_luce_matrimoniale_luce_matrimoniale
+        media:
+        - media_player.decoder_camera
+        sonde:
+        - sensor.aqaracameramatrimoniale_temperature
+        - sensor.netatmo_camera_temperature
+        - sensor.valvolatermostaticamatrimoniale_local_temperature
+        clima: climate.condizionatore_matrimoniale
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: climate.condizionatore_luca
+      triggers_update:
+      - light.nspanel_luca_relay_1
+      - light.razzonotteluca
+      - light.luci_luca
+      - sensor.aqaracameraluca_temperature
+      - sensor.nspanel_luca_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Camera Luca
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-camera-luca.yaml'
+      variables:
+        nome: Camera Luca
+        icona: <circle cx="12" cy="8" r="4"/><path d="M5 21c1-4 4-6 7-6s6 2 7 6"/>
+        colore: '#FF7EB6'
+        apre: true
+        luci:
+        - light.nspanel_luca_relay_1
+        - light.razzonotteluca
+        alim:
+        - light.luci_luca
+        alimDa: light.nspanel_luca_relay_1
+        sonde:
+        - sensor.aqaracameraluca_temperature
+        - sensor.nspanel_luca_temperature
+        clima: climate.condizionatore_luca
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: climate.condizionatore_sofia
+      triggers_update:
+      - light.luce_sofia
+      - light.lucinottesofia_l1
+      - light.lucinottesofia_l2
+      - sensor.aqarasofia_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Camera Sofia
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-camera-sofia.yaml'
+      variables:
+        nome: Camera Sofia
+        icona: <circle cx="12" cy="8" r="4"/><path d="M5 21c1-4 4-6 7-6s6 2 7 6"/>
+        colore: '#7DB4FF'
+        apre: true
+        luci:
+        - light.luce_sofia
+        - light.lucinottesofia_l1
+        - light.lucinottesofia_l2
+        sonde:
+        - sensor.aqarasofia_temperature
+        clima: climate.condizionatore_sofia
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: light.luce_bagno_su
+      triggers_update:
+      - sensor.aqarabagnosu_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Bagno di sopra
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-bagno-su.yaml'
+      variables:
+        nome: Bagno di sopra
+        icona: <path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM7 12V6a2 2 0 0 1 4 0"/>
+        colore: '#5CC8FF'
+        apre: true
+        luci:
+        - light.luce_bagno_su
+        sonde:
+        - sensor.aqarabagnosu_temperature
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: light.corridoio_su_luce_corridoiosu_luce_corridoiosu
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Corridoio
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-corridoio.yaml'
+      variables:
+        nome: Corridoio
+        icona: <path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16"/><circle cx="14.6" cy="12.4" r=".9"/>
+        colore: '#A0AEC0'
+        apre: true
+        luci:
+        - light.corridoio_su_luce_corridoiosu_luce_corridoiosu
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: climate.condizionatore_sottotetto
+      triggers_update:
+      - light.wled_triangoli
+      - light.lucisottotetto
+      - media_player.sottotetto
+      - sensor.xiaomisottotetto_temperature
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Sottotetto
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-sottotetto.yaml'
+      variables:
+        nome: Sottotetto
+        icona: <path d="M12 3l9 8h-3v10H6V11H3zM10 21v-6h4v6"/>
+        colore: '#4FD1C5'
+        apre: true
+        luci:
+        - light.wled_triangoli
+        - light.lucisottotetto
+        media:
+        - media_player.sottotetto
+        sonde:
+        - sensor.xiaomisottotetto_temperature
+        clima: climate.condizionatore_sottotetto
+    - type: custom:button-card
+      template: stanza_tablet
+      entity: light.luce_ripostiglio
+      triggers_update:
+      - binary_sensor.portaripostiglio_contact
+      tap_action:
+        action: fire-dom-event
+        browser_mod:
+          service: browser_mod.popup
+          data:
+            title: Ripostiglio
+            size: wide
+            style: '--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-family: ''Plus Jakarta Sans'', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: ''Plus Jakarta Sans'', system-ui, sans-serif;'
+            content: !include 'popup-ripostiglio.yaml'
+      variables:
+        nome: Ripostiglio
+        icona: <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+        colore: '#A0AEC0'
+        apre: true
+        luci:
+        - light.luce_ripostiglio
+  - !include 'alfred.yaml'

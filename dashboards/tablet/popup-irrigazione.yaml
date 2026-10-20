@@ -1,0 +1,119 @@
+# Popup "Irrigazione" (dalle zone in Esterno). Stesse funzioni della dashboard
+# principale, divise per programma: programma on/off, durata in minuti, stato
+# (prossima partenza, ultima, minuti rimanenti) e apertura manuale delle valvole.
+# I giorni e le ore di partenza stanno nei calendari schedule.*, che il frontend
+# non espone: toccando lo stato del programma si apre il dettaglio del
+# calendario. Lo stato segue il timer del programma, attivo solo mentre irriga.
+# Nessun [[[ ]]] scritto qui: lo calcolerebbe la tessera che apre il popup.
+type: vertical-stack
+cards:
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: custom:button-card
+        template: impostazione
+        entity: input_boolean.ignora_meteo_irrigazione
+        variables: {nome: Ignora la pioggia prevista, nota: spento si ferma se è prevista pioggia, icona: 'mdi:weather-rainy', colore: '#5CB0FF'}
+      - type: custom:button-card
+        template: impostazione_valore
+        entity: input_select.giorni_irrigazione_goccia
+        variables: {nome: Giorno goccia, nota: tocca per cambiarlo, icona: 'mdi:calendar-week', colore: '#4FD1C5'}
+
+  - type: custom:layout-card
+    layout_type: custom:grid-layout
+    layout:
+      grid-template-columns: repeat(3, minmax(0, 1fr))
+      grid-gap: 16px
+      margin: '0'
+      padding: 0
+    cards:
+
+      # ---------------- GIARDINO (anteriore + laterale) ----------------
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: sezione
+            variables: {titolo: Giardino, nota: anteriore e laterale}
+          - type: custom:button-card
+            template: zona_irrigua
+            entity: timer.irrigazione_giardino
+            tap_action: {action: more-info, entity: schedule.irrigazione_giardino}
+            triggers_update: [valve.irrigazione_l1, valve.irrigazione_l2, timer.irrigazione_giardino, input_boolean.automazione_programmazione_irrigazione, input_datetime.last_irrigation_run_giardino]
+            variables: {nome: Programma, programma: input_boolean.automazione_programmazione_irrigazione,
+                        calendario: schedule.irrigazione_giardino, ultima: input_datetime.last_irrigation_run_giardino,
+                        timer: timer.irrigazione_giardino}
+          - type: custom:button-card
+            template: impostazione
+            entity: input_boolean.automazione_programmazione_irrigazione
+            variables: {nome: Attivo, icona: 'mdi:sprinkler-variant', colore: '#5CB0FF'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.tempo_irrigazione_giardino
+            variables: {nome: Durata per zona, icona: 'mdi:timer-outline', colore: '#5CB0FF'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_datetime.start_irrigazione_giardino
+            variables: {nome: Ora di avvio, icona: 'mdi:clock-start', colore: '#5CB0FF'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: switch.irrigazione_l1
+            variables: {nome: Anteriore, icona: 'mdi:sprinkler', testo_on: Aperta, testo_off: Chiusa}
+          - type: custom:button-card
+            template: luce_riga
+            entity: switch.irrigazione_l2
+            variables: {nome: Laterale, icona: 'mdi:sprinkler', testo_on: Aperta, testo_off: Chiusa}
+
+      # ---------------- ROSE ----------------
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: sezione
+            variables: {titolo: Rose}
+          - type: custom:button-card
+            template: zona_irrigua
+            entity: timer.irrigazione_rose
+            tap_action: {action: more-info, entity: schedule.irrigazione_rose}
+            triggers_update: [valve.irrigazione_l3, timer.irrigazione_rose, input_boolean.automazione_programmazione_irrigazione_rose, input_datetime.last_irrigation_run_rose]
+            variables: {nome: Programma, programma: input_boolean.automazione_programmazione_irrigazione_rose,
+                        calendario: schedule.irrigazione_rose, ultima: input_datetime.last_irrigation_run_rose,
+                        timer: timer.irrigazione_rose}
+          - type: custom:button-card
+            template: impostazione
+            entity: input_boolean.automazione_programmazione_irrigazione_rose
+            variables: {nome: Attivo, icona: 'mdi:flower-outline', colore: '#FF7EB6'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.tempo_irrigazione_rose
+            variables: {nome: Durata, unita: min, icona: 'mdi:timer-outline', colore: '#FF7EB6'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: switch.irrigazione_l3
+            variables: {nome: Valvola rose, icona: 'mdi:sprinkler', testo_on: Aperta, testo_off: Chiusa}
+
+      # ---------------- GOCCIA ----------------
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: sezione
+            variables: {titolo: Goccia, nota: orto}
+          - type: custom:button-card
+            template: zona_irrigua
+            entity: timer.irrigazione_goccia
+            tap_action: {action: more-info, entity: schedule.irrigazione_a_goccia}
+            triggers_update: [switch.valvolairrigazionegoccia, timer.irrigazione_goccia, input_boolean.automazione_programmazione_irrigazione_goccia, input_datetime.last_irrigation_run_goccia]
+            variables: {nome: Programma, programma: input_boolean.automazione_programmazione_irrigazione_goccia,
+                        calendario: schedule.irrigazione_a_goccia, ultima: input_datetime.last_irrigation_run_goccia,
+                        timer: timer.irrigazione_goccia}
+          - type: custom:button-card
+            template: impostazione
+            entity: input_boolean.automazione_programmazione_irrigazione_goccia
+            variables: {nome: Attivo, icona: 'mdi:water-outline', colore: '#4FD1C5'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.tempo_irrigazione_goccia
+            variables: {nome: Durata, unita: min, icona: 'mdi:timer-outline', colore: '#4FD1C5'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: switch.valvolairrigazionegoccia
+            variables: {nome: Valvola goccia, icona: 'mdi:water-pump', testo_on: Aperta, testo_off: Chiusa}

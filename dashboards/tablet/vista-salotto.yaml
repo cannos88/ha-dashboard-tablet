@@ -1,0 +1,398 @@
+# ===========================================================================
+# VISTA "Salotto" - dashboard Tablet
+# Due colonne, ognuna una pila di sezioni con intestazione:
+#   sinistra (7/12): Luci (righe compatte, due per riga), Scene, Televisione
+#   destra   (5/12): Clima (quadrante), Casa (energia e cancelli)
+# Le altezze le decide il contenuto: lo spazio che avanza in fondo e' voluto.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+# ======================= COLONNA SINISTRA =======================
+- type: vertical-stack
+  view_layout: {grid-column: 3 / span 7, grid-row: 3}
+  cards:
+    # Il riepilogo luci si aggiorna con le luci: sono tutte nei triggers.
+    - type: custom:button-card
+      template: sezione
+      entity: light.luci_salotto
+      triggers_update:
+        - light.led_tv_salotto
+        - light.led_divano_2
+        - light.luce_tavolo_salotto
+        - light.led_salotto
+        - light.shellyplus1_80646fc7eaec_switch_0
+      variables:
+        titolo: Luci
+        nota: >
+          [[[
+            var L = ['light.luci_salotto', 'light.led_tv_salotto', 'light.led_divano_2',
+                     'light.luce_tavolo_salotto', 'light.led_salotto',
+                     'light.shellyplus1_80646fc7eaec_switch_0'];
+            var n = 0;
+            for (var i = 0; i < L.length; i++) if (states[L[i]] && states[L[i]].state === 'on') n++;
+            return n === 0 ? 'tutte spente' : (n === 1 ? '1 accesa' : n + ' accese');
+          ]]]
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.luci_salotto
+            variables: {nome: Luci salotto, icona: 'mdi:ceiling-light'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.led_tv_salotto
+            variables: {nome: LED TV, icona: 'mdi:led-strip-variant'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.led_divano_2
+            variables: {nome: LED divano, icona: 'mdi:sofa-outline'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.luce_tavolo_salotto
+            variables: {nome: Luce tavolo, icona: 'mdi:floor-lamp'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.led_salotto
+            variables: {nome: LED perimetro, icona: 'mdi:led-strip'}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.shellyplus1_80646fc7eaec_switch_0
+            variables: {nome: Faretti, icona: 'mdi:spotlight-beam'}
+
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Scene}
+    # Il Timer TV non e' piu' qui: ha il suo pulsante e popup nella tessera TV.
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+        - type: custom:button-card
+          template: azione_riga
+          variables: {nome: Vado a letto, icona: 'mdi:weather-night', colore: '#8B9CFF'}
+          tap_action:
+            action: call-service
+            service: scene.turn_on
+            target: {entity_id: scene.vado_a_letto}
+            confirmation: {text: 'Attivare lo scenario "vado a letto"?'}
+        - type: custom:button-card
+          template: azione_riga
+          variables: {nome: Purifica, icona: 'mdi:air-purifier', colore: '#4FD1C5'}
+          tap_action:
+            action: call-service
+            service: script.turn_on
+            target: {entity_id: script.purificazione_salotto}
+
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Televisione}
+    # Televisione. Su HDMI 1 trasmette il decoder Enigma2: si mostra il canale
+    # (logo, programma, orari e avanzamento) invece della sorgente; se la Fire TV
+    # e' attiva, la sua app. Sotto: app, comandi di decoder, TV e Fire TV, e il
+    # timer TV che apre il suo popup.
+    - type: custom:button-card
+      template: tessera
+      entity: media_player.sony_bravia_tv
+      triggers_update:
+        - media_player.decoder_salotto
+        - media_player.fire_tv_192_168_0_102
+        - timer.tv_timer
+        - sensor.time_2
+      hold_action:
+        action: more-info
+      styles:
+        card:
+          - height: 214px
+          - padding: 14px 18px
+        grid:
+          - grid-template-areas: '"c p" "a a" "r1 r1" "r2 r2"'
+          - grid-template-columns: 1fr 44px
+          - grid-template-rows: 46px 38px 36px 36px
+          - gap: 8px
+      custom_fields:
+        c: >
+          [[[
+            var e = entity;
+            var off = function (s) { return !s || ['off', 'unavailable', 'unknown', 'standby'].indexOf(s.state) >= 0; };
+            var on = !off(e);
+            var dec = states['media_player.decoder_salotto'];
+            var fire = states['media_player.fire_tv_192_168_0_102'];
+            var src = on ? (e.attributes.source || '') : '';
+            var APP = {'com.amazon.tv.launcher': 'Home', 'com.netflix.ninja': 'Netflix',
+                       'com.disney.disneyplus': 'Disney+', 'com.amazon.avod': 'Prime Video',
+                       'com.wbd.stream': 'Max', 'com.google.android.youtube.tv': 'YouTube',
+                       'com.amazon.firetv.youtube': 'YouTube', 'com.spotify.tv.android': 'Spotify'};
+            var logo = '', titolo = 'Smart TV', riga = on ? (src || 'Accesa') : 'Spenta', barra = '';
+            if (on && src === 'HDMI 1' && !off(dec)) {
+              // Decoder: canale, programma e avanzamento della trasmissione.
+              var a = dec.attributes;
+              titolo = a.media_channel || a.source || 'Decoder';
+              var prog = a.media_series_title || (a.media_title !== titolo ? a.media_title : '');
+              var orari = a.media_start_time && a.media_end_time ? a.media_start_time + '–' + a.media_end_time : '';
+              riga = [prog, orari].filter(function (x) { return x; }).join(' · ') || 'Decoder';
+              if (a.entity_picture) logo = a.entity_picture;
+              if (a.media_start_time && a.media_end_time) {
+                var hm = function (t) { var p = t.split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+                var n = new Date(), ora = n.getHours() * 60 + n.getMinutes();
+                var s0 = hm(a.media_start_time), s1 = hm(a.media_end_time);
+                if (s1 < s0) s1 += 1440;
+                if (ora < s0) ora += 1440;
+                var f = Math.max(0, Math.min(1, (ora - s0) / Math.max(1, s1 - s0)));
+                barra = '<div style="height:4px;border-radius:2px;background:#232A33;margin-top:5px;overflow:hidden;">' +
+                  '<div style="height:100%;width:' + Math.round(f * 100) + '%;background:#FF7EB6;"></div></div>';
+              }
+            } else if (on && src !== 'HDMI 1' && !off(fire)) {
+              titolo = 'Fire TV';
+              riga = APP[fire.attributes.source] || fire.attributes.app_name || fire.attributes.source || 'Accesa';
+            }
+            var icona = logo
+              ? '<img src="' + logo + '" style="width:44px;height:44px;border-radius:12px;object-fit:contain;' +
+                'background:#1C222A;flex:none;">'
+              : '<div style="width:44px;height:44px;border-radius:13px;flex:none;display:grid;place-items:center;' +
+                'background:' + (on ? 'rgba(255,126,182,.18)' : '#1C222A') + ';"><ha-icon icon="mdi:television" ' +
+                'style="--mdc-icon-size:22px;color:' + (on ? '#FF7EB6' : '#8A93A0') + ';"></ha-icon></div>';
+            return '<div style="display:flex;align-items:center;gap:12px;height:100%;">' + icona +
+              '<div style="flex:1;min-width:0;text-align:left;line-height:1.25;"><div style="font-size:17px;' +
+              'font-weight:700;color:#EEF0F3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + titolo +
+              '</div><div style="font-size:14px;color:' + (on ? '#FF9FC8' : '#8A93A0') + ';white-space:nowrap;' +
+              'overflow:hidden;text-overflow:ellipsis;">' + riga + '</div>' + barra + '</div></div>';
+          ]]]
+        p:
+          card:
+            type: custom:button-card
+            template: pulsante_mini
+            entity: media_player.sony_bravia_tv
+            variables:
+              nome: ''
+              icona: 'mdi:power'
+              colore: '#FF7EB6'
+              attivo: '[[[ return entity && ["off","unavailable","unknown","standby"].indexOf(entity.state) < 0; ]]]'
+            tap_action:
+              action: call-service
+              service: media_player.toggle
+              target: {entity_id: media_player.sony_bravia_tv}
+        a:
+          card:
+            type: grid
+            columns: 5
+            square: false
+            cards:
+              - type: custom:button-card
+                template: pulsante_mini
+                variables: {nome: Netflix, icona: 'mdi:netflix', colore: '#FF5A5F'}
+                tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.apri_netflix_su_fire_tv}}
+              - type: custom:button-card
+                template: pulsante_mini
+                variables: {nome: Disney+, icona: 'mdi:star-four-points', colore: '#5C8DFF'}
+                tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.avvia_disney_salotto}}
+              - type: custom:button-card
+                template: pulsante_mini
+                variables: {nome: Prime, icona: 'mdi:play-box', colore: '#3FC6F0'}
+                tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.avvia_prime_video_salotto}}
+              - type: custom:button-card
+                template: pulsante_mini
+                variables: {nome: Max, icona: 'mdi:movie-open', colore: '#A27BFF'}
+                tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.avvia_max_salotto}}
+              - type: custom:button-card
+                template: pulsante_mini
+                variables: {nome: Canale 5, icona: 'mdi:numeric-5-box', colore: '#FFB547'}
+                tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.cambio_canale_canale5_salotto}}
+        # Comandi del decoder (canale -/+ sono traccia precedente/successiva su
+        # Enigma2) e del volume della TV.
+        r1:
+          card:
+            type: custom:button-card
+            template: barra_comandi
+            variables:
+              etichetta1: Decoder
+              etichetta2: TV
+            custom_fields:
+              b1: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:chevron-down', colore: '#B79CFF'}, tap_action: {action: call-service, service: media_player.media_previous_track, target: {entity_id: media_player.decoder_salotto}}}}
+              b2: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:chevron-up', colore: '#B79CFF'}, tap_action: {action: call-service, service: media_player.media_next_track, target: {entity_id: media_player.decoder_salotto}}}}
+              b3: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:play-pause', colore: '#B79CFF'}, tap_action: {action: call-service, service: media_player.media_play_pause, target: {entity_id: media_player.decoder_salotto}}}}
+              b4: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:volume-minus', colore: '#FF7EB6'}, tap_action: {action: call-service, service: media_player.volume_down, target: {entity_id: media_player.sony_bravia_tv}}}}
+              b5: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:volume-plus', colore: '#FF7EB6'}, tap_action: {action: call-service, service: media_player.volume_up, target: {entity_id: media_player.sony_bravia_tv}}}}
+              b6: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:volume-off', colore: '#FF7EB6'}, tap_action: {action: call-service, service: media_player.volume_mute, target: {entity_id: media_player.sony_bravia_tv}, data: {is_volume_muted: true}}}}
+        # Fire TV (comandi ADB) e timer TV, che apre il suo popup.
+        r2:
+          card:
+            type: custom:button-card
+            template: barra_comandi
+            variables:
+              etichetta1: Fire TV
+              etichetta2: ''
+              largo: true
+            custom_fields:
+              b1: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:home-outline', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_192_168_0_102}, data: {command: HOME}}}}
+              b2: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:arrow-left', colore: '#FFB547'}, tap_action: {action: call-service, service: androidtv.adb_command, target: {entity_id: media_player.fire_tv_192_168_0_102}, data: {command: BACK}}}}
+              b3: {card: {type: 'custom:button-card', template: pulsante_mini, variables: {nome: '', icona: 'mdi:play-pause', colore: '#FFB547'}, tap_action: {action: call-service, service: media_player.media_play_pause, target: {entity_id: media_player.fire_tv_192_168_0_102}}}}
+              t:
+                card:
+                  type: custom:button-card
+                  template: pulsante_mini
+                  entity: timer.tv_timer
+                  triggers_update: [sensor.time_2, input_number.durata_timer_tv_min]
+                  variables:
+                    icona: mdi:timer-outline
+                    colore: '#8B9CFF'
+                    attivo: '[[[ var t = states["timer.tv_timer"]; return t && t.state === "active"; ]]]'
+                    nome: >
+                      [[[ var t = states['timer.tv_timer'];
+                          if (t && t.state === 'active' && t.attributes.finishes_at) {
+                            var m = Math.max(0, Math.ceil((new Date(t.attributes.finishes_at) - Date.now()) / 60000));
+                            return 'Timer TV · ' + m + ' min';
+                          }
+                          var d = states['input_number.durata_timer_tv_min'];
+                          return 'Timer TV' + (d ? ' · ' + Math.round(Number(d.state)) + ' min' : ''); ]]]
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                        title: Timer TV
+                        content: !include popup-timer-tv.yaml
+
+# ======================= COLONNA DESTRA =======================
+- type: vertical-stack
+  view_layout: {grid-column: 10 / span 5, grid-row: 3}
+  cards:
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Clima}
+    - type: custom:button-card
+      template: clima_quadrante
+      entity: climate.condizionatore_salotto
+      variables:
+        sonde: [sensor.aqarasalotto_temperature]
+        modi: true
+      styles:
+        card:
+          - height: 372px
+
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Casa}
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+        # Energia in sintesi: tocca per aprire la vista Energia.
+        - type: custom:button-card
+          template: tessera
+          styles:
+            card:
+              - height: 196px
+          entity: sensor.potenza_casa
+          tap_action:
+            action: navigate
+            navigation_path: energia
+          triggers_update:
+            - sensor.solaredge_i2_ac_power
+            - sensor.monitoring_accumulo_fv_jk_bms_state_of_charge
+            - sensor.monitoring_accumulo_fv_jk_bms_power
+          custom_fields:
+            c: >
+              [[[
+                var num = function (id) {
+                  var e = states[id];
+                  if (!e || e.state === 'unavailable' || e.state === 'unknown') return null;
+                  var v = Number(e.state);
+                  return isNaN(v) ? null : v;
+                };
+                var pot = function (v) {
+                  if (v === null) return '--';
+                  return Math.abs(v) >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + ' kW'
+                                             : Math.round(v) + ' W';
+                };
+                var sole = num('sensor.solaredge_i2_ac_power');
+                var casa = num('sensor.potenza_casa');
+                var soc = num('sensor.monitoring_accumulo_fv_jk_bms_state_of_charge');
+                var bat = num('sensor.monitoring_accumulo_fv_jk_bms_power');
+                var prod = sole !== null && sole > 20;
+                var livello = soc === null ? 0 : Math.max(0, Math.min(100, soc));
+                var colBat = soc === null ? '#5B6470' : (soc < 20 ? '#FF8A80' : '#4FD1C5');
+                // Barra sottile: nella tessera stretta il disegno a pila pesava piu'
+                // del dato. Il lampo dice che sta caricando.
+                var batteria = '<div style="height:8px;border-radius:4px;background:#232A33;' +
+                  'overflow:hidden;"><div style="height:100%;width:' + livello + '%;border-radius:4px;' +
+                  'background:' + colBat + ';"></div></div>';
+                return '<div style="display:flex;flex-direction:column;justify-content:space-between;' +
+                  'height:100%;text-align:left;">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                  '<span style="font-size:14px;color:#8A93A0;">Dal sole</span>' +
+                  '<svg width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="' +
+                  (prod ? '#FFC94D' : '#5B6470') + '"/><g stroke="' + (prod ? '#FFC94D' : '#5B6470') +
+                  '" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5' +
+                  'M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></g></svg></div>' +
+                  '<div><div style="font-size:30px;font-weight:800;letter-spacing:-.03em;' +
+                  'font-variant-numeric:tabular-nums;color:' + (prod ? '#6FD39B' : '#EEF0F3') + ';">' +
+                  pot(sole) + '</div><div style="font-size:14px;color:#8A93A0;margin-top:2px;">' +
+                  'casa ' + pot(casa) + '</div></div>' +
+                  '<div><div style="display:flex;justify-content:space-between;align-items:center;' +
+                  'font-size:13px;color:#8A93A0;margin-bottom:7px;"><span>Batteria' +
+                  (bat !== null && bat > 20 ? ' · in carica' : '') + '</span>' +
+                  '<span style="font-weight:700;color:' + colBat + ';">' +
+                  (soc === null ? 'n.d.' : Math.round(soc) + '%') + '</span></div>' + batteria +
+                  '</div></div>';
+              ]]]
+        # Cancelli: apertura rapida, sempre con conferma.
+        - type: custom:button-card
+          template: tessera
+          entity: cover.cancello_pedonale
+          triggers_update:
+            - cover.cancello_carrabile
+          styles:
+            card:
+              - height: 196px
+              - padding: 14px
+            grid:
+              - grid-template-areas: '"c" "p" "k"'
+              - grid-template-rows: auto 1fr 1fr
+              - gap: 8px
+          custom_fields:
+            c: >
+              [[[
+                var vale = function (e) {
+                  return e && e.state !== 'unavailable' && e.state !== 'unknown';
+                };
+                var varchi = ['cover.cancello_pedonale', 'cover.cancello_carrabile'];
+                var aperti = 0, muti = 0;
+                for (var i = 0; i < varchi.length; i++) {
+                  var c = states[varchi[i]];
+                  if (!vale(c)) { muti++; continue; }
+                  if (c.state !== 'closed') aperti++;
+                }
+                var testo = aperti > 0 ? (aperti === 1 ? '1 aperto' : '2 aperti')
+                  : (muti === varchi.length ? 'Stato ignoto' : 'Chiusi');
+                var col = aperti > 0 ? '#F5B53D' : (muti === varchi.length ? '#8A93A0' : '#6FD39B');
+                return '<div style="display:flex;align-items:center;gap:7px;padding:2px 4px 0;' +
+                  'font-size:14px;font-weight:700;color:' + col + ';">' +
+                  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+                  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' +
+                  (aperti > 0 ? '' : '<path d="M9 12l2 2 4-4"/>') + '</svg>' + testo + '</div>';
+              ]]]
+            p:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Pedonale, icona: 'mdi:door-open', colore: '#5CC8FF'}
+                tap_action:
+                  action: call-service
+                  service: cover.open_cover
+                  target: {entity_id: cover.cancello_pedonale}
+                  confirmation: {text: 'Aprire il cancello pedonale?'}
+            k:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Carrabile, icona: 'mdi:gate-arrow-right', colore: '#5CC8FF'}
+                tap_action:
+                  action: call-service
+                  service: cover.open_cover
+                  target: {entity_id: cover.cancello_carrabile}
+                  confirmation: {text: 'Aprire il cancello carrabile?'}

@@ -1,0 +1,511 @@
+# ===========================================================================
+# VISTA "Accessi" - dashboard Tablet
+#   Ingressi:  pedonale | carrabile | porta garage
+#   Sicurezza: allarme 4  | telecamere (diretta nel popup) 8
+# Una colonna sola con due sezioni. (Le tessere messe in righe implicite
+# della griglia della vista non vengono disegnate da layout-card: tutto il
+# contenuto deve stare nella riga 3.)
+# Lo streaming del videocitofono e' rinviato (scelta dell'utente 21/09/2026).
+#
+# Due differenze fra i cancelli che determinano i comandi:
+#  - pedonale: open/close, stato reale e contatto con batteria;
+#  - carrabile: anche stop, ma stato "unknown" e contatto "unavailable": HA
+#    NON sa se e' aperto. Un toggle sarebbe un tiro a indovinare: si usa
+#    open_cover esplicito, piu' lo stop.
+# Ogni apertura chiede conferma: un tocco accidentale sul pannello del
+# salotto aprirebbe il cancello di casa.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+- type: vertical-stack
+  view_layout: {grid-column: 3 / span 12, grid-row: 3}
+  cards:
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Ingressi, nota: ogni apertura chiede conferma}
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+        # ---------------- CANCELLO PEDONALE ----------------
+        # Disegno: due pilastri e l'anta a sbarre. Aperta, l'anta ruota sul cardine
+        # (resa in prospettiva) e diventa ambra.
+        - type: custom:button-card
+          template: tessera
+          entity: binary_sensor.cancellopedonale_contact
+          hold_action:
+            action: more-info
+          triggers_update:
+            - sensor.cancellopedonale_battery
+            - cover.cancello_pedonale
+          styles:
+            card:
+              - height: 336px
+            grid:
+              - grid-template-areas: '"c c" "a b"'
+              - grid-template-columns: 1fr 1fr
+              - grid-template-rows: 1fr 64px
+              - gap: 12px
+          custom_fields:
+            c: >
+              [[[
+                var e = entity;
+                var noto = e && (e.state === 'on' || e.state === 'off');
+                var aperto = noto && e.state === 'on';
+                var col = !noto ? '#8A93A0' : (aperto ? '#F5B53D' : '#5CC8FF');
+                var b = states['sensor.cancellopedonale_battery'];
+                var batt = b && !isNaN(Number(b.state)) ? Number(b.state) : null;
+                var P = 'pd';
+                var anta = function () {
+                  var s = '<rect x="132" y="76" width="192" height="9" rx="2" fill="url(#pdtraverso)"/>' +
+                    '<rect x="132" y="206" width="192" height="9" rx="2" fill="url(#pdtraverso)"/>' +
+                    '<rect x="132" y="70" width="9" height="150" rx="2" fill="url(#pdferro)"/>' +
+                    '<rect x="315" y="70" width="9" height="150" rx="2" fill="url(#pdferro)"/>';
+                  for (var j = 1; j < 8; j++) {
+                    var x = 132 + j * 24;
+                    s += '<rect x="' + (x - 3) + '" y="66" width="6" height="150" rx="2" fill="url(#pdferro)"/>' +
+                      '<path d="M' + (x - 5) + ' 68 L' + x + ' 54 L' + (x + 5) + ' 68 Z" fill="url(#pdferro)"/>';
+                  }
+                  return s + '<rect x="294" y="132" width="18" height="28" rx="3" fill="url(#pdsmalto)" stroke="#94a3b8" stroke-width="1"/>' +
+                    '<circle cx="303" cy="142" r="3.5" fill="url(#pdcromo)"/><rect x="301" y="148" width="4" height="7" rx="1" fill="#334155"/>';
+                };
+                var gruppo = aperto ? '<g transform="translate(132 0) matrix(.42 -.12 0 1 0 0) translate(-132 0)">' + anta() + '</g>'
+                  : '<g' + (noto ? '' : ' opacity=".45"') + '>' + anta() + '</g>';
+                var svg = '<svg viewBox="0 0 456 260" style="width:100%;height:100%;display:block;">' +
+                  '<defs>' +
+                  '<linearGradient id="pdmuro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cbd5e1"/><stop offset=".35" stop-color="#f8fafc"/><stop offset="1" stop-color="#b6c2d1"/></linearGradient>' +
+                  '<linearGradient id="pdcappello" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#94a3b8"/><stop offset=".5" stop-color="#64748b"/><stop offset="1" stop-color="#475569"/></linearGradient>' +
+                  '<linearGradient id="pdferro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e293b"/><stop offset=".45" stop-color="#8494a8"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="pdtraverso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#64748b"/><stop offset=".5" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="pdcromo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".3" stop-color="#94a3b8"/><stop offset=".55" stop-color="#e2e8f0"/><stop offset="1" stop-color="#64748b"/></linearGradient>' +
+                  '<linearGradient id="pdsmalto" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#f1f5f9"/><stop offset=".75" stop-color="#e2e8f0"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>' +
+                  '<linearGradient id="pdsuolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#1e293b"/></linearGradient>' +
+                  '<filter id="pdombra" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity=".45"/></filter>' +
+                  '</defs>' +
+                  '<ellipse cx="228" cy="242" rx="210" ry="9" fill="#000" opacity=".35"/>' +
+                  '<rect x="18" y="234" width="420" height="8" rx="3" fill="url(#pdsuolo)"/>' +
+                  '<g filter="url(#pdombra)"><rect x="100" y="48" width="28" height="188" rx="3" fill="url(#pdmuro)" stroke="#94a3b8" stroke-width="1"/>' +
+                  '<rect x="95" y="40" width="38" height="12" rx="3" fill="url(#pdcappello)"/></g>' +
+                  '<g filter="url(#pdombra)"><rect x="328" y="48" width="28" height="188" rx="3" fill="url(#pdmuro)" stroke="#94a3b8" stroke-width="1"/>' +
+                  '<rect x="323" y="40" width="38" height="12" rx="3" fill="url(#pdcappello)"/></g>' +
+                  '<g filter="url(#pdombra)">' + gruppo + '</g>' +
+                  '<g filter="url(#pdombra)"><rect x="105" y="110" width="18" height="30" rx="4" fill="url(#pdsmalto)" stroke="#94a3b8" stroke-width="1"/></g>' +
+                  '<rect x="109" y="125" width="10" height="10" rx="2" fill="#0f172a"/>' +
+                  '<circle cx="114" cy="118" r="3.6" fill="' + col + '"' + (noto ? ' style="filter:drop-shadow(0 0 4px ' + col + ')"' : '') + '/>' +
+                  '</svg>';
+                var stato = !noto ? 'Stato non rilevato' : (aperto ? 'Aperto' : 'Chiuso');
+                return '<div style="display:flex;flex-direction:column;height:100%;text-align:left;">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+                  '<div><div style="font-size:20px;font-weight:700;color:#EEF0F3;">Cancello pedonale</div>' +
+                  '<div style="font-size:16px;font-weight:700;color:' + col + ';margin-top:2px;">' + stato +
+                  '</div></div>' + (batt === null ? '' : '<span style="display:inline-flex;align-items:center;' +
+                  'gap:5px;font-size:14px;color:' + (batt < 20 ? '#FF8A80' : '#8A93A0') + ';">' +
+                  '<ha-icon icon="mdi:battery' + (batt >= 95 ? '' : '-' + Math.max(10, Math.round(batt / 10) * 10)) +
+                  '" style="--mdc-icon-size:18px;"></ha-icon>' + Math.round(batt) + '%</span>') + '</div>' +
+                  '<div style="flex:1;min-height:0;padding-top:10px;">' + svg + '</div></div>';
+              ]]]
+            a:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Apri, icona: 'mdi:door-open', colore: '#5CC8FF', attivo: true}
+                tap_action:
+                  action: call-service
+                  service: cover.open_cover
+                  target: {entity_id: cover.cancello_pedonale}
+                  confirmation: {text: 'Aprire il cancello pedonale?'}
+            b:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Chiudi, icona: 'mdi:door-closed-lock', colore: '#8A93A0'}
+                tap_action:
+                  action: call-service
+                  service: cover.close_cover
+                  target: {entity_id: cover.cancello_pedonale}
+                  confirmation: {text: 'Chiudere il cancello pedonale?'}
+        # ---------------- CANCELLO CARRABILE ----------------
+        # Disegno: binario, pilastri e anta scorrevole. Aperta, l'anta scorre a
+        # destra dietro il pilastro. Senza stato (oggi e' cosi') l'anta e' grigia
+        # e tratteggiata: il disegno non deve fingere di sapere.
+        - type: custom:button-card
+          template: tessera
+          entity: binary_sensor.cancellocarrabile_contact
+          hold_action:
+            action: more-info
+          triggers_update:
+            - cover.cancello_carrabile
+          styles:
+            card:
+              - height: 336px
+            grid:
+              - grid-template-areas: '"c c" "a b"'
+              - grid-template-columns: 1fr 1fr
+              - grid-template-rows: 1fr 64px
+              - gap: 12px
+          custom_fields:
+            c: >
+              [[[
+                var e = entity;
+                var noto = e && (e.state === 'on' || e.state === 'off');
+                var aperto = noto && e.state === 'on';
+                var col = !noto ? '#8A93A0' : (aperto ? '#F5B53D' : '#5CC8FF');
+                var dx = aperto ? 230 : 0;
+                var sbarre = '';
+                for (var j = 1; j < 12; j++) {
+                  var x = 64 + dx + j * 27;
+                  sbarre += '<rect x="' + (x - 3) + '" y="98" width="6" height="108" rx="2" fill="url(#crferro)"/>';
+                }
+                var ruota = function (cx) {
+                  return '<circle cx="' + cx + '" cy="222" r="10" fill="url(#crcromo)" stroke="#334155" stroke-width="1.5"/>' +
+                    '<circle cx="' + cx + '" cy="222" r="3.5" fill="#1e293b"/>';
+                };
+                var anta = '<g clip-path="url(#carr)"' + (noto ? '' : ' opacity=".45"') + '><g filter="url(#crombra)">' +
+                  '<rect x="' + (64 + dx) + '" y="92" width="328" height="10" rx="2" fill="url(#crtraverso)"/>' +
+                  '<rect x="' + (64 + dx) + '" y="200" width="328" height="12" rx="2" fill="url(#crtraverso)"/>' +
+                  '<rect x="' + (64 + dx) + '" y="92" width="10" height="120" rx="2" fill="url(#crferro)"/>' +
+                  '<rect x="' + (382 + dx) + '" y="92" width="10" height="120" rx="2" fill="url(#crferro)"/>' + sbarre +
+                  '</g>' + ruota(100 + dx) + ruota(356 + dx) + '</g>';
+                var svg = '<svg viewBox="0 0 456 260" style="width:100%;height:100%;display:block;">' +
+                  '<defs>' +
+                  '<linearGradient id="crmuro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cbd5e1"/><stop offset=".35" stop-color="#f8fafc"/><stop offset="1" stop-color="#b6c2d1"/></linearGradient>' +
+                  '<linearGradient id="crcappello" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#94a3b8"/><stop offset=".5" stop-color="#64748b"/><stop offset="1" stop-color="#475569"/></linearGradient>' +
+                  '<linearGradient id="crferro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e293b"/><stop offset=".45" stop-color="#8494a8"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="crtraverso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#64748b"/><stop offset=".5" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="crcromo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".3" stop-color="#94a3b8"/><stop offset=".55" stop-color="#e2e8f0"/><stop offset="1" stop-color="#64748b"/></linearGradient>' +
+                  '<linearGradient id="crsmalto" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#f1f5f9"/><stop offset=".75" stop-color="#e2e8f0"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>' +
+                  '<linearGradient id="crsuolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#1e293b"/></linearGradient>' +
+                  '<filter id="crombra" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity=".45"/></filter>' +
+                  '</defs>' +
+                  '<defs><clipPath id="carr"><rect x="0" y="0" width="420" height="260"/></clipPath></defs>' +
+                  '<ellipse cx="228" cy="242" rx="210" ry="9" fill="#000" opacity=".35"/>' +
+                  '<rect x="18" y="234" width="420" height="8" rx="3" fill="url(#crsuolo)"/>' +
+                  '<rect x="44" y="230" width="386" height="5" rx="2" fill="url(#crcromo)"/>' + anta +
+                  '<g filter="url(#crombra)"><rect x="36" y="60" width="28" height="176" rx="3" fill="url(#crmuro)" stroke="#94a3b8" stroke-width="1"/>' +
+                  '<rect x="31" y="52" width="38" height="12" rx="3" fill="url(#crcappello)"/></g>' +
+                  '<g filter="url(#crombra)"><rect x="392" y="60" width="28" height="176" rx="3" fill="url(#crmuro)" stroke="#94a3b8" stroke-width="1"/>' +
+                  '<rect x="387" y="52" width="38" height="12" rx="3" fill="url(#crcappello)"/></g>' +
+                  '<g filter="url(#crombra)"><rect x="4" y="194" width="28" height="40" rx="4" fill="url(#crsmalto)" stroke="#94a3b8" stroke-width="1"/></g>' +
+                  '<rect x="9" y="214" width="18" height="3" rx="1" fill="#94a3b8"/><rect x="9" y="220" width="18" height="3" rx="1" fill="#94a3b8"/>' +
+                  '<circle cx="18" cy="204" r="3.6" fill="' + col + '"' + (noto ? ' style="filter:drop-shadow(0 0 4px ' + col + ')"' : '') + '/>' +
+                  (aperto ? '<path d="M180 150h70m-16-14 16 14-16 14" fill="none" stroke="#F5B53D" ' +
+                    'stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px #F5B53D)"/>' : '') + '</svg>';
+                var stato = !noto ? 'Stato non rilevato' : (aperto ? 'Aperto' : 'Chiuso');
+                return '<div style="display:flex;flex-direction:column;height:100%;text-align:left;">' +
+                  '<div style="font-size:20px;font-weight:700;color:#EEF0F3;">Cancello carrabile</div>' +
+                  '<div style="font-size:16px;font-weight:700;color:' + col + ';margin-top:2px;">' + stato +
+                  '</div><div style="flex:1;min-height:0;padding-top:10px;">' + svg + '</div></div>';
+              ]]]
+            a:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Apri, icona: 'mdi:gate-arrow-right', colore: '#5CC8FF', attivo: true}
+                tap_action:
+                  action: call-service
+                  service: cover.open_cover
+                  target: {entity_id: cover.cancello_carrabile}
+                  confirmation: {text: 'Aprire il cancello carrabile?'}
+            b:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables: {nome: Ferma, icona: 'mdi:stop-circle-outline', colore: '#FF8A80'}
+                tap_action:
+                  action: call-service
+                  service: cover.stop_cover
+                  target: {entity_id: cover.cancello_carrabile}
+
+        # ---------------- PORTA GARAGE ----------------
+        # Disegno: porta sezionale nella facciata. Aperta, i pannelli salgono e
+        # si vede l'interno con l'auto; diventa ambra. cover.porta_garage e' una
+        # cover template: apre e chiude con lo stesso impulso
+        # (script.apri_porta_garage), lo stato viene dal contatto. Per questo un
+        # solo pulsante, cover.toggle, con conferma.
+        - type: custom:button-card
+          template: tessera
+          entity: cover.porta_garage
+          hold_action:
+            action: more-info
+          triggers_update:
+            - binary_sensor.portagarage_contact
+          styles:
+            card:
+              - height: 336px
+            grid:
+              - grid-template-areas: '"c" "a"'
+              - grid-template-columns: 1fr
+              - grid-template-rows: 1fr 64px
+              - gap: 12px
+          custom_fields:
+            c: >
+              [[[
+                var e = entity;
+                var noto = e && ['open', 'closed', 'opening', 'closing'].indexOf(e.state) >= 0;
+                var aperto = noto && e.state !== 'closed';
+                var col = !noto ? '#8A93A0' : (aperto ? '#F5B53D' : '#5CC8FF');
+                var pannelli = '';
+                if (aperto) {
+                  for (var i = 0; i < 2; i++)
+                    pannelli += '<rect x="120" y="' + (70 + i * 14) + '" width="216" height="13" rx="2" fill="url(#grsmalto)" stroke="#94a3b8" stroke-width="1"/>';
+                } else {
+                  for (var j = 0; j < 6; j++)
+                    pannelli += '<rect x="120" y="' + (70 + j * 26) + '" width="216" height="26" fill="url(#grsmalto)" stroke="#94a3b8" stroke-width="1"/>' +
+                      '<line x1="128" y1="' + (83 + j * 26) + '" x2="328" y2="' + (83 + j * 26) + '" stroke="#cbd5e1" stroke-width="1.5"/>';
+                  if (!noto) pannelli = '<g opacity=".5">' + pannelli + '</g>';
+                }
+                var interno = aperto ? '<rect x="120" y="96" width="216" height="140" fill="#05070c"/>' +
+                  '<path d="M164 200 q6-30 30-34 h68 q24 4 30 34 z" fill="url(#grauto)"/>' +
+                  '<path d="M184 196 q4-20 20-24 h48 q16 4 20 24 z" fill="#0b1220" opacity=".9"/>' +
+                  '<rect x="154" y="196" width="148" height="24" rx="9" fill="url(#grauto)"/>' +
+                  '<rect x="166" y="202" width="16" height="7" rx="2" fill="#F5B53D" style="filter:drop-shadow(0 0 4px #F5B53D)"/>' +
+                  '<rect x="274" y="202" width="16" height="7" rx="2" fill="#F5B53D" style="filter:drop-shadow(0 0 4px #F5B53D)"/>' +
+                  '<circle cx="184" cy="222" r="10" fill="#0f172a" stroke="url(#grcromo)" stroke-width="4"/>' +
+                  '<circle cx="272" cy="222" r="10" fill="#0f172a" stroke="url(#grcromo)" stroke-width="4"/>' : '';
+                var svg = '<svg viewBox="0 0 456 260" style="width:100%;height:100%;display:block;">' +
+                  '<defs>' +
+                  '<linearGradient id="grmuro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cbd5e1"/><stop offset=".35" stop-color="#f8fafc"/><stop offset="1" stop-color="#b6c2d1"/></linearGradient>' +
+                  '<linearGradient id="grcappello" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#94a3b8"/><stop offset=".5" stop-color="#64748b"/><stop offset="1" stop-color="#475569"/></linearGradient>' +
+                  '<linearGradient id="grferro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e293b"/><stop offset=".45" stop-color="#8494a8"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="grtraverso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#64748b"/><stop offset=".5" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient>' +
+                  '<linearGradient id="grcromo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".3" stop-color="#94a3b8"/><stop offset=".55" stop-color="#e2e8f0"/><stop offset="1" stop-color="#64748b"/></linearGradient>' +
+                  '<linearGradient id="grsmalto" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#f1f5f9"/><stop offset=".75" stop-color="#e2e8f0"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>' +
+                  '<linearGradient id="grsuolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#1e293b"/></linearGradient>' +
+                  '<filter id="grombra" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity=".45"/></filter>' +
+                  '</defs>' +
+                  '<defs><linearGradient id="grauto" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#64748b"/>' +
+                  '<stop offset=".5" stop-color="#334155"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs>' +
+                  '<ellipse cx="228" cy="242" rx="210" ry="9" fill="#000" opacity=".35"/>' +
+                  '<rect x="18" y="234" width="420" height="8" rx="3" fill="url(#grsuolo)"/>' +
+                  '<g filter="url(#grombra)"><rect x="72" y="58" width="312" height="178" fill="url(#grmuro)" stroke="#94a3b8" stroke-width="1"/>' +
+                  '<path d="M52 66 L228 14 L404 66 L404 76 L228 24 L52 76 Z" fill="url(#grcappello)"/></g>' +
+                  '<rect x="114" y="64" width="228" height="172" fill="#334155"/>' + interno + pannelli +
+                  (aperto ? '' : '<rect x="212" y="204" width="32" height="7" rx="3" fill="url(#grcromo)" stroke="#475569" stroke-width=".8"/>') +
+                  '<rect x="354" y="98" width="16" height="22" rx="4" fill="#1e293b"/>' +
+                  '<rect x="356" y="112" width="12" height="6" rx="2" fill="' + col + '"' + (noto ? ' style="filter:drop-shadow(0 0 5px ' + col + ')"' : '') + '/>' +
+                  '</svg>';
+                var stato = !noto ? 'Stato non rilevato' : ({open: 'Aperta', closed: 'Chiusa', opening: 'In apertura',
+                  closing: 'In chiusura'})[e.state];
+                return '<div style="display:flex;flex-direction:column;height:100%;text-align:left;">' +
+                  '<div style="font-size:20px;font-weight:700;color:#EEF0F3;">Porta garage</div>' +
+                  '<div style="font-size:16px;font-weight:700;color:' + col + ';margin-top:2px;">' + stato +
+                  '</div><div style="flex:1;min-height:0;padding-top:10px;">' + svg + '</div></div>';
+              ]]]
+            a:
+              card:
+                type: custom:button-card
+                template: pulsante
+                variables:
+                  icona: mdi:garage-variant
+                  colore: '#5CC8FF'
+                  attivo: true
+                  nome: '[[[ var g = states["cover.porta_garage"]; return g && g.state === "closed" ? "Apri" : "Chiudi"; ]]]'
+                tap_action:
+                  action: call-service
+                  service: cover.toggle
+                  target: {entity_id: cover.porta_garage}
+                  confirmation: {text: 'Azionare la porta del garage?'}
+
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Sicurezza}
+    # Allarme stretto, telecamere larghe: un grid card non sa fare colonne
+    # diverse, layout-card si'.
+    - type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: 1fr 2fr
+        grid-gap: 12px
+        margin: 0
+        padding: 0
+      cards:
+        # ---------------- ALLARME ----------------
+        # Solo lettura: l'inserimento resta all'app e alle automazioni.
+        - type: custom:button-card
+          template: tessera
+          entity: alarm_control_panel.allarme_allarme_area_1
+          styles:
+            card:
+              - height: 150px
+          triggers_update:
+            - alarm_control_panel.allarme_allarme_area_2
+          custom_fields:
+            c: >
+              [[[
+                var aree = [['Area 1', 'alarm_control_panel.allarme_allarme_area_1'],
+                            ['Area 2', 'alarm_control_panel.allarme_allarme_area_2']];
+                var NOMI = {disarmed: 'spenta', armed_away: 'inserita', armed_home: 'in casa',
+                            armed_night: 'notte', pending: 'in attesa', arming: 'in inserimento',
+                            triggered: 'IN ALLARME'};
+                var armate = 0, scattato = false, righe = '';
+                for (var i = 0; i < aree.length; i++) {
+                  var a = states[aree[i][1]];
+                  var st = a ? a.state : 'unavailable';
+                  if (st === 'triggered') scattato = true;
+                  if (st !== 'disarmed' && st !== 'unavailable' && st !== 'unknown') armate++;
+                  righe += '<div style="display:flex;justify-content:space-between;font-size:14px;">' +
+                    '<span style="color:#8A93A0;">' + aree[i][0] + '</span><span style="font-weight:700;' +
+                    'color:' + (st === 'disarmed' ? '#8A93A0' : (st === 'triggered' ? '#FF8A80' : '#6FD39B')) +
+                    ';">' + (NOMI[st] || 'non raggiungibile') + '</span></div>';
+                }
+                var col = scattato ? '#FF8A80' : (armate === 0 ? '#8A93A0' : '#6FD39B');
+                var titolo = scattato ? 'Allarme scattato' : (armate === 0 ? 'Allarme spento'
+                  : (armate === aree.length ? 'Allarme inserito' : 'Allarme parziale'));
+                /* Tastiera dell'allarme realistica: smalto, display scuro, tasti, LED nel colore di
+                   stato; quando scatta il lampeggiante rosso in cima pulsa. */
+                var tasti = '';
+                for (var ty = 0; ty < 3; ty++) for (var tx = 0; tx < 3; tx++)
+                  tasti += '<rect x="' + (14 + tx * 9) + '" y="' + (32 + ty * 7) + '" width="7" height="5" rx="1.2" fill="url(#alTasto)"/>';
+                var scudo = '<svg width="56" height="64" viewBox="0 0 52 60" style="flex:none;">' +
+                  '<defs><linearGradient id="alSmalto" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#ffffff"/>' +
+                  '<stop offset=".35" stop-color="#f1f5f9"/><stop offset=".8" stop-color="#d5dde8"/><stop offset="1" stop-color="#b6c2d1"/></linearGradient>' +
+                  '<linearGradient id="alVetro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#020617"/></linearGradient>' +
+                  '<linearGradient id="alTasto" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>' +
+                  '<radialGradient id="alLampo" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#FFD0CC"/><stop offset="1" stop-color="#DC2626"/></radialGradient>' +
+                  '</defs><style>.alLampeggia{animation:alLampeggia .7s ease-in-out infinite}' +
+                  '@keyframes alLampeggia{50%{opacity:.25}}@media (prefers-reduced-motion:reduce){.alLampeggia{animation:none}}</style>' +
+                  (scattato ? '<path class="alLampeggia" d="M18 8a8 8 0 0 1 16 0z" fill="url(#alLampo)" style="filter:drop-shadow(0 0 5px #FF5A4F)"/>' : '') +
+                  '<rect x="8" y="8" width="36" height="50" rx="6" fill="url(#alSmalto)" stroke="#94a3b8" stroke-width="1" ' +
+                  'style="filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))"/>' +
+                  '<rect x="13" y="13" width="26" height="14" rx="2.5" fill="url(#alVetro)"/>' +
+                  '<rect x="16" y="18.5" width="' + (scattato ? 20 : (armate ? 14 : 8)) + '" height="3" rx="1" fill="' + col + '"' +
+                  (armate || scattato ? ' style="filter:drop-shadow(0 0 2px ' + col + ')"' : ' opacity=".7"') + '/>' + tasti +
+                  '<circle cx="40" cy="53" r="1.8" fill="' + col + '"' + (armate || scattato ? ' style="filter:drop-shadow(0 0 3px ' + col + ')"' : '') + '/></svg>';
+                return '<div style="display:flex;flex-direction:column;justify-content:space-between;' +
+                  'height:100%;text-align:left;"><div style="display:flex;align-items:center;gap:14px;">' +
+                  scudo + '<div style="font-size:18px;font-weight:700;color:' +
+                  (armate || scattato ? col : '#EEF0F3') + ';">' + titolo + '</div></div>' +
+                  '<div style="display:flex;flex-direction:column;gap:8px;">' + righe + '</div></div>';
+              ]]]
+        # ---------------- TELECAMERE ----------------
+        # Al tocco la diretta nel popup (webrtc-camera sui flussi go2rtc, gli stessi
+        # della vista Telecamere della dashboard principale), una alla volta: il
+        # tablet regge male piu' flussi insieme. Dal popup si manda anche sulla TV.
+        - type: custom:button-card
+          template: tessera
+          styles:
+            card:
+              - height: 150px
+            grid:
+              - grid-template-areas: '"t t t t" "a b p d"'
+              - grid-template-columns: repeat(4, 1fr)
+              - grid-template-rows: auto 1fr
+              - gap: 12px
+            custom_fields:
+              t:
+                - justify-self: start
+          custom_fields:
+            t: >
+              [[[ return '<div style="display:flex;align-items:center;gap:10px;text-align:left;">' +
+                '<ha-icon icon="mdi:cctv" style="--mdc-icon-size:22px;color:#5CC8FF;"></ha-icon>' +
+                '<span style="font-size:16px;font-weight:700;color:#EEF0F3;">Telecamere</span>' +
+                '<span style="font-size:14px;color:#8A93A0;">· tocca per la diretta</span></div>'; ]]]
+            a:
+              card:
+                type: custom:button-card
+                template: azione_riga
+                variables: {nome: Cancello, icona: 'mdi:gate', colore: '#5CC8FF', compatta: true}
+                styles: {card: [background: '#1A2028', padding: 0 10px 0 8px]}
+                tap_action:
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                      title: Cancello
+                      size: normal
+                      content:
+                        type: vertical-stack
+                        cards:
+                          - type: custom:webrtc-camera
+                            url: rtsp://hassio.local:8554/Cancello
+                            ui: true
+                            card_mod:
+                              style: 'ha-card { border-radius: 22px !important; overflow: hidden; border: none !important; }'
+                          - type: custom:button-card
+                            template: pulsante
+                            variables: {nome: Mostra sulla TV del salotto, icona: 'mdi:television', colore: '#5CC8FF'}
+                            styles: {card: [height: 56px]}
+                            tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.mostra_tel_cancello_su_salotto}}
+            b:
+              card:
+                type: custom:button-card
+                template: azione_riga
+                variables: {nome: Porticato, icona: 'mdi:home-outline', colore: '#5CC8FF', compatta: true}
+                styles: {card: [background: '#1A2028', padding: 0 10px 0 8px]}
+                tap_action:
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                      title: Porticato
+                      size: normal
+                      content:
+                        type: vertical-stack
+                        cards:
+                          - type: custom:webrtc-camera
+                            url: rtsp://hassio.local:8554/Porticato
+                            ui: true
+                            card_mod:
+                              style: 'ha-card { border-radius: 22px !important; overflow: hidden; border: none !important; }'
+                          - type: custom:button-card
+                            template: pulsante
+                            variables: {nome: Mostra sulla TV del salotto, icona: 'mdi:television', colore: '#5CC8FF'}
+                            styles: {card: [height: 56px]}
+                            tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.mostra_tel_porticato_su_salotto}}
+            p:
+              card:
+                type: custom:button-card
+                template: azione_riga
+                variables: {nome: Parcheggio, icona: 'mdi:car-outline', colore: '#5CC8FF', compatta: true}
+                styles: {card: [background: '#1A2028', padding: 0 10px 0 8px]}
+                tap_action:
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                      title: Parcheggio
+                      size: normal
+                      content:
+                        type: vertical-stack
+                        cards:
+                          - type: custom:webrtc-camera
+                            url: rtsp://hassio.local:8554/Parcheggio
+                            ui: true
+                            card_mod:
+                              style: 'ha-card { border-radius: 22px !important; overflow: hidden; border: none !important; }'
+                          - type: custom:button-card
+                            template: pulsante
+                            variables: {nome: Mostra sulla TV del salotto, icona: 'mdi:television', colore: '#5CC8FF'}
+                            styles: {card: [height: 56px]}
+                            tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.mostra_tel_parcheggio_su_salotto}}
+            d:
+              card:
+                type: custom:button-card
+                template: azione_riga
+                variables: {nome: Garage, icona: 'mdi:garage', colore: '#5CC8FF', compatta: true}
+                styles: {card: [background: '#1A2028', padding: 0 10px 0 8px]}
+                tap_action:
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                      title: Garage
+                      size: normal
+                      content:
+                        type: vertical-stack
+                        cards:
+                          - type: custom:webrtc-camera
+                            url: rtsp://hassio.local:8554/PortaGarage
+                            ui: true
+                            card_mod:
+                              style: 'ha-card { border-radius: 22px !important; overflow: hidden; border: none !important; }'
+                          - type: custom:button-card
+                            template: pulsante
+                            variables: {nome: Mostra sulla TV del salotto, icona: 'mdi:television', colore: '#5CC8FF'}
+                            styles: {card: [height: 56px]}
+                            tap_action: {action: call-service, service: script.turn_on, target: {entity_id: script.mostra_tel_porta_garage_su_salotto}}

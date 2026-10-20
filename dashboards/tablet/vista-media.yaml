@@ -1,0 +1,344 @@
+# ===========================================================================
+# VISTA "Media" - dashboard Tablet
+# Le sei zone di Music Assistant in due righe da tre, alla loro altezza
+# naturale (su un tablet in orizzontale ci stanno tutte, che e' l'informazione
+# utile su un pannello a parete), sotto gli annunci vocali.
+# I player di Music Assistant sono quelli con suffisso _2 (tranne il
+# sottotetto): la convenzione e' documentata in template.yaml.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+- type: vertical-stack
+  view_layout: {grid-column: 3 / span 12, grid-row: 3}
+  cards:
+    - type: custom:button-card
+      template: sezione
+      entity: media_player.salotto_2
+      triggers_update:
+        - media_player.cucina_2
+        - media_player.piano_terra_2
+        - media_player.casse_giardino_2
+        - media_player.casse_bbq_2
+        - media_player.sottotetto
+      variables:
+        titolo: Zone audio
+        nota: >
+          [[[
+            var M = ['media_player.salotto_2', 'media_player.cucina_2', 'media_player.piano_terra_2',
+                     'media_player.casse_giardino_2', 'media_player.casse_bbq_2', 'media_player.sottotetto'];
+            var n = 0;
+            for (var i = 0; i < M.length; i++) if (states[M[i]] && states[M[i]].state === 'playing') n++;
+            return n === 0 ? 'tutto in silenzio' : (n === 1 ? '1 in riproduzione' : n + ' in riproduzione');
+          ]]]
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+        - type: custom:mini-media-player
+          entity: media_player.salotto_2
+          name: Salotto
+          icon: mdi:sofa-outline
+          artwork: default
+          group: true
+          card_mod: &zona
+            # config.entity e' l'entita' della singola card: un anchor solo per sei
+            # zone, ognuna con il proprio stato attivo.
+            style: |
+              :host { display: block; height: 100%; }
+              ha-card {
+                border-radius: 22px !important;
+                font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+                --mmp-accent-color: #FF7EB6;
+                --mmp-icon-color: #8A93A0;
+                --mmp-icon-active-color: #FF7EB6;
+                --mmp-text-color: #EEF0F3;
+                --mmp-media-cover-info-color: #EEF0F3;
+                --primary-color: #FF7EB6;
+                --mdc-theme-primary: #FF7EB6;
+                --mdc-theme-secondary: #FF7EB6;
+                --paper-slider-active-color: #FF7EB6;
+                --paper-slider-knob-color: #FF7EB6;
+                --ha-slider-background: #2A323D;
+                --md-sys-color-surface-container-highest: #2A323D;
+                --md-sys-color-primary: #FF7EB6;
+                --paper-slider-container-color: #2A323D;
+                --mmp-unused-icon-color: #5B6470;
+                --md-slider-inactive-track-color: #2A323D;
+                --slider-track-color: #2A323D;
+                --disabled-color: #2A323D;
+                height: 100%;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                border: 1px solid rgba(255,255,255,.035) !important;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+                overflow: hidden;
+                {% if is_state(config.entity, 'playing') %}
+                background: #2A1622 !important;
+                {% else %}
+                background: #12161B !important;
+                {% endif %}
+                padding: 4px 4px 2px;
+              }
+        - type: custom:mini-media-player
+          entity: media_player.cucina_2
+          name: Cucina
+          icon: mdi:silverware-fork-knife
+          artwork: default
+          group: true
+          card_mod: *zona
+        - type: custom:mini-media-player
+          entity: media_player.piano_terra_2
+          name: Piano terra
+          icon: mdi:home-floor-0
+          artwork: default
+          group: true
+          card_mod: *zona
+        - type: custom:mini-media-player
+          entity: media_player.sottotetto
+          name: Sottotetto
+          icon: mdi:home-roof
+          artwork: default
+          group: true
+          card_mod: *zona
+        - type: custom:mini-media-player
+          entity: media_player.casse_giardino_2
+          name: Giardino
+          icon: mdi:flower-outline
+          artwork: default
+          group: true
+          card_mod: *zona
+        - type: custom:mini-media-player
+          entity: media_player.casse_bbq_2
+          name: BBQ
+          icon: mdi:grill-outline
+          artwork: default
+          group: true
+          card_mod: *zona
+
+    # ---------------- RADIO ----------------
+    # Stazioni preferite della Mobile (script.radio_play, URI di Music Assistant)
+    # sulla zona scelta in input_select.zona_audio; "Simile" crea una playlist
+    # simile al brano in ascolto (script.radio_simile).
+    - type: custom:button-card
+      template: sezione
+      entity: input_select.zona_audio
+      variables:
+        titolo: Radio
+        nota: '[[[ var z = states["input_select.zona_audio"]; return z ? "suona in " + z.state.toLowerCase() : ""; ]]]'
+    - type: grid
+      columns: 5
+      square: false
+      cards:
+          - type: custom:button-card
+            template: pulsante_mini
+            variables:
+              nome: Cucina
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ var z = states["input_select.zona_audio"]; return z && z.state === "Cucina"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              target: {entity_id: input_select.zona_audio}
+              data: {option: Cucina}
+          - type: custom:button-card
+            template: pulsante_mini
+            variables:
+              nome: Salotto
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ var z = states["input_select.zona_audio"]; return z && z.state === "Salotto"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              target: {entity_id: input_select.zona_audio}
+              data: {option: Salotto}
+          - type: custom:button-card
+            template: pulsante_mini
+            variables:
+              nome: Piano terra
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ var z = states["input_select.zona_audio"]; return z && z.state === "Piano terra"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              target: {entity_id: input_select.zona_audio}
+              data: {option: Piano terra}
+          - type: custom:button-card
+            template: pulsante_mini
+            variables:
+              nome: Sottotetto
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ var z = states["input_select.zona_audio"]; return z && z.state === "Sottotetto"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              target: {entity_id: input_select.zona_audio}
+              data: {option: Sottotetto}
+          - type: custom:button-card
+            template: pulsante_mini
+            variables: {nome: Simile, icona: 'mdi:shuffle-variant', colore: '#B79CFF'}
+            tap_action: {action: call-service, service: script.radio_simile}
+    - type: grid
+      columns: 5
+      square: false
+      cards:
+          - type: custom:button-card
+            template: radio_stazione
+            variables: {nome: Radio 105, uri: 'library://radio/1', logo: /local/radio/radio105.webp}
+          - type: custom:button-card
+            template: radio_stazione
+            variables: {nome: Kiss Kiss, uri: 'library://radio/4', logo: /local/radio/kisskiss.webp}
+          - type: custom:button-card
+            template: radio_stazione
+            variables: {nome: RDS, uri: 'library://radio/2', logo: /local/radio/rds.webp}
+          - type: custom:button-card
+            template: radio_stazione
+            variables: {nome: RTL 102.5, uri: 'library://radio/3', logo: /local/radio/rtl1025.webp}
+          - type: custom:button-card
+            template: radio_stazione
+            variables: {nome: Virgin Radio, uri: 'library://radio/5', logo: /local/radio/virgin.webp}
+
+    - type: custom:button-card
+      template: sezione
+      variables: {titolo: Annuncio in casa, nota: 'scegli dove, poi il messaggio'}
+    # ---------------- ANNUNCI VOCALI ----------------
+    # I tre messaggi chiamano script.annuncio_tablet. L'altoparlante e'
+    # input_select.altoparlante_tts, lo stesso helper dell'annuncio esistente:
+    # qui e' una fila di pulsanti invece della tendina, si sceglie con un tocco.
+    - type: custom:button-card
+      template: tessera
+      entity: input_select.altoparlante_tts
+      styles:
+        card:
+          - height: 190px
+        grid:
+          - grid-template-areas: '"l l l m1 m2 m3" "s1 s2 s3 m1 m2 m3" "t t i m1 m2 m3"'
+          - grid-template-columns: 1fr 1fr 1fr 1.15fr 1.15fr 1.15fr
+          - grid-template-rows: 20px 48px 1fr
+          - column-gap: 10px
+          - row-gap: 12px
+      custom_fields:
+        l: >
+          [[[ return '<div style="font-size:14px;color:#8A93A0;text-align:left;">Altoparlante</div>'; ]]]
+        s1:
+          card:
+            type: custom:button-card
+            template: pulsante
+            entity: input_select.altoparlante_tts
+            variables:
+              nome: Cucina
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ return entity && entity.state === "Cucina"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              data: {entity_id: input_select.altoparlante_tts, option: Cucina}
+        s2:
+          card:
+            type: custom:button-card
+            template: pulsante
+            entity: input_select.altoparlante_tts
+            variables:
+              nome: Salotto
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ return entity && entity.state === "Salotto"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              data: {entity_id: input_select.altoparlante_tts, option: Salotto}
+        s3:
+          card:
+            type: custom:button-card
+            template: pulsante
+            entity: input_select.altoparlante_tts
+            variables:
+              nome: Sottotetto
+              icona: mdi:speaker
+              colore: '#FF7EB6'
+              scelta: true
+              attivo: '[[[ return entity && entity.state === "Sottotetto"; ]]]'
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              data: {entity_id: input_select.altoparlante_tts, option: Sottotetto}
+        # Messaggio libero: lo stesso input_text.messaggio_tts e lo stesso
+        # script.annuncio_tts della dashboard principale.
+        t:
+          card:
+            type: entities
+            entities:
+              - entity: input_text.messaggio_tts
+                name: Scrivi un annuncio
+            card_mod:
+              style: |
+                ha-card {
+                  background: #1A2028 !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  border-radius: 16px !important;
+                  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+                  --primary-color: #FF7EB6;
+                  --state-icon-color: #FF7EB6;
+                  --wa-form-control-placeholder-color: #6B7480;
+                }
+                .card-content { padding: 0 12px 0 8px !important; }
+        i:
+          card:
+            type: custom:button-card
+            template: pulsante
+            entity: input_text.messaggio_tts
+            variables:
+              nome: Pronuncia
+              icona: mdi:send
+              colore: '#FF7EB6'
+              attivo: '[[[ return entity && entity.state && entity.state !== "unknown"; ]]]'
+            tap_action:
+              action: call-service
+              service: script.annuncio_tts
+        m1:
+          card:
+            type: custom:button-card
+            template: tessera_azione
+            variables: {nome: Cena pronta, nota: 'A tavola!', icona: 'mdi:silverware-fork-knife', colore: '#B79CFF'}
+            styles:
+              card: [background: '#1A2028', padding: 12px]
+            tap_action:
+              action: call-service
+              service: script.annuncio_tablet
+              data: {messaggio: 'A tavola, la cena è pronta!'}
+        m2:
+          card:
+            type: custom:button-card
+            template: tessera_azione
+            variables: {nome: Sveglia, nota: 'È ora di alzarsi', icona: 'mdi:weather-sunset-up', colore: '#FFC94D'}
+            styles:
+              card: [background: '#1A2028', padding: 12px]
+            tap_action:
+              action: call-service
+              service: script.annuncio_tablet
+              data: {messaggio: 'Sveglia ragazzi, è ora di alzarsi!'}
+        m3:
+          card:
+            type: custom:button-card
+            template: tessera_azione
+            variables: {nome: Si esce, nota: 'Tra cinque minuti', icona: 'mdi:exit-run', colore: '#4FD1C5'}
+            styles:
+              card: [background: '#1A2028', padding: 12px]
+            tap_action:
+              action: call-service
+              service: script.annuncio_tablet
+              data: {messaggio: 'Attenzione, usciamo tutti tra cinque minuti.'}

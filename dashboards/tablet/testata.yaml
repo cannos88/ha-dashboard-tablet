@@ -1,0 +1,173 @@
+# ===========================================================================
+# TESTATA - dashboard Tablet
+# Un file solo per tutte le viste: il titolo lo ricava da location.pathname.
+# Contiene cio' che si legge da lontano: vista, data, meteo con illustrazione,
+# chi e' in casa, ora. sensor.time_2 cambia ogni minuto e la ridisegna.
+# ===========================================================================
+type: custom:button-card
+view_layout:
+  grid-column: 3 / 15
+  grid-row: 2
+entity: sensor.time_2
+show_icon: false
+show_name: false
+show_state: false
+tap_action:
+  action: none
+triggers_update:
+  - sensor.date_2
+  - weather.meteoradar_weather
+  - sensor.casa_rotondo_salotto_esterno_temperature
+  - person.marco
+  - person.anna
+styles:
+  card:
+    - font-family: "'Plus Jakarta Sans', system-ui, sans-serif"
+    - height: 100%
+    - background: none
+    - border: none
+    - box-shadow: none
+    - padding: 0
+    - overflow: visible
+  grid:
+    - grid-template-areas: '"c"'
+    - grid-template-columns: 1fr
+    - height: 100%
+  custom_fields:
+    c:
+      - width: 100%
+      - justify-self: stretch
+      - align-self: center
+custom_fields:
+  c: >
+    [[[
+      // Sulla Panoramica il titolo e' un saluto che segue l'ora.
+      var h = new Date().getHours();
+      var saluto = h < 5 ? 'Buonanotte' : (h < 13 ? 'Buongiorno' : (h < 18 ? 'Buon pomeriggio' : 'Buonasera'));
+      var TITOLI = {casa: saluto, salotto: 'Salotto', stanze: 'Stanze', energia: 'Energia',
+                    media: 'Media', accessi: 'Accessi', esterno: 'Esterno',
+                    impostazioni: 'Impostazioni'};
+      var qui = '';
+      try { qui = (location.pathname.split('/').pop() || '').toLowerCase(); }
+      catch (e) {}
+      var titolo = TITOLI[qui] || saluto;
+
+      // Il giorno si ricava dalla data invece di leggere
+      // sensor.giorno_della_settimana, che va in unavailable dopo un riavvio.
+      var MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                  'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+      var GIORNI = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+      var data = states['sensor.date_2'];
+      var riga = '';
+      if (data && data.state && data.state.indexOf('-') > 0) {
+        var p = data.state.split('-');
+        var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+        riga = GIORNI[d.getDay()] + ' ' + Number(p[2]) + ' ' + MESI[Number(p[1]) - 1];
+      }
+
+      // Meteo: piccola illustrazione disegnata per ogni condizione.
+      var w = states['weather.meteoradar_weather'];
+      var cond = w ? w.state : '';
+      var CIELO = {
+        'clear-night': 'Sereno', 'cloudy': 'Nuvoloso', 'fog': 'Nebbia',
+        'hail': 'Grandine', 'lightning': 'Temporale', 'lightning-rainy': 'Temporale',
+        'partlycloudy': 'Poco nuvoloso', 'pouring': 'Pioggia forte', 'rainy': 'Pioggia',
+        'snowy': 'Neve', 'snowy-rainy': 'Nevischio', 'sunny': 'Sereno',
+        'windy': 'Vento', 'windy-variant': 'Vento', 'exceptional': 'Eccezionale'
+      };
+      /* Icone meteo realistiche: gradienti in D, aggiunti a ogni svg 40x40. */
+      var D = '<defs><radialGradient id="mSole" cx="40%" cy="38%" r="65%"><stop offset="0" stop-color="#FFFBEA"/>' +
+        '<stop offset=".45" stop-color="#FFD45C"/><stop offset="1" stop-color="#F59E0B"/></radialGradient>' +
+        '<radialGradient id="mLuna" cx="38%" cy="35%" r="70%"><stop offset="0" stop-color="#F1F5F9"/>' +
+        '<stop offset=".6" stop-color="#C9D3E3"/><stop offset="1" stop-color="#8A96AB"/></radialGradient>' +
+        '<linearGradient id="mNube" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+        '<stop offset=".6" stop-color="#D5DCE6"/><stop offset="1" stop-color="#9AA7B8"/></linearGradient>' +
+        '<linearGradient id="mNubeScura" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B8C2CF"/>' +
+        '<stop offset="1" stop-color="#5B6676"/></linearGradient>' +
+        '<linearGradient id="mGoccia" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0FF"/>' +
+        '<stop offset="1" stop-color="#2F86E0"/></linearGradient>' +
+        '<linearGradient id="mLampo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3B0"/>' +
+        '<stop offset="1" stop-color="#F59E0B"/></linearGradient></defs>' +
+        '<style>.mRaggi{transform-origin:20px 18px;animation:mGira 30s linear infinite}' +
+        '.mCade{animation:mCade 1.4s linear infinite}.mCade2{animation:mCade 1.4s linear .45s infinite}' +
+        '.mCade3{animation:mCade 1.4s linear .9s infinite}.mLuce{animation:mLuce 2.8s ease-in-out infinite}' +
+        '@keyframes mGira{to{transform:rotate(360deg)}}' +
+        '@keyframes mCade{0%{transform:translateY(-3px);opacity:0}30%{opacity:1}100%{transform:translateY(4px);opacity:0}}' +
+        '@keyframes mLuce{0%,100%{opacity:1}50%{opacity:.55}}' +
+        '@media (prefers-reduced-motion:reduce){.mRaggi,.mCade,.mCade2,.mCade3,.mLuce{animation:none}}</style>';
+      var raggi = '';
+      for (var ri = 0; ri < 8; ri++)
+        raggi += '<path d="M20 3.5 L21.6 8 L18.4 8 Z" fill="#FFD45C" transform="rotate(' + (ri * 45) + ' 20 18)"/>';
+      var sole = '<g class="mRaggi">' + raggi + '</g>' +
+        '<circle cx="20" cy="18" r="7.5" fill="url(#mSole)" style="filter:drop-shadow(0 0 3px rgba(255,201,77,.8))"/>';
+      var luna = '<circle cx="20" cy="20" r="11" fill="url(#mLuna)" style="filter:drop-shadow(0 0 3px rgba(201,211,255,.6))"/>' +
+        '<circle cx="16" cy="17" r="2.6" fill="#9AA6BA" opacity=".55"/><circle cx="24" cy="24" r="1.8" fill="#9AA6BA" opacity=".5"/>' +
+        '<circle cx="23" cy="14" r="1.3" fill="#9AA6BA" opacity=".45"/>';
+      var nuvola = function (x, y, c) {
+        var scura = c === '#8E9BAB' || c === '#7C8796';
+        return '<path transform="translate(' + x + ',' + y + ')" d="M8 22h17a6 6 0 0 0 ' +
+          '0-12 8 8 0 0 0-15-1A6.5 6.5 0 0 0 8 22z" fill="url(#' + (scura ? 'mNubeScura' : 'mNube') + ')" ' +
+          'style="filter:drop-shadow(0 1.5px 1.5px rgba(0,0,0,.45))"/>';
+      };
+      var goccia = function (x, cl) { return '<path class="' + cl + '" d="M' + x + ' 30 q2.2 3.2 0 5.2 q-2.2-2 0-5.2z" fill="url(#mGoccia)"/>'; };
+      var gocce = goccia(14, 'mCade') + goccia(21, 'mCade2') + goccia(28, 'mCade3');
+      var fulmine = '<path class="mLuce" d="M22 27l-4 7h4l-2 6 7-9h-4l2-4z" fill="url(#mLampo)" ' +
+        'style="filter:drop-shadow(0 0 2.5px #FFC94D)"/>';
+      var fiocchi = '<g fill="#F4F8FF" style="filter:drop-shadow(0 0 1.5px #fff)"><circle class="mCade" cx="13" cy="34" r="2"/>' +
+        '<circle class="mCade2" cx="21" cy="36" r="2"/><circle class="mCade3" cx="29" cy="34" r="2"/></g>';
+      var arte;
+      if (cond === 'sunny') arte = sole;
+      else if (cond === 'clear-night') arte = luna;
+      else if (cond === 'partlycloudy') arte = sole + nuvola(6, 6, '#B8C2CF');
+      else if (cond === 'rainy' || cond === 'pouring') arte = nuvola(2, 0, '#8E9BAB') + gocce;
+      else if (cond === 'lightning' || cond === 'lightning-rainy') arte = nuvola(2, 0, '#7C8796') + fulmine;
+      else if (cond === 'snowy' || cond === 'snowy-rainy' || cond === 'hail') arte = nuvola(2, 0, '#B8C2CF') + fiocchi;
+      else if (cond === 'fog') arte = '<g stroke="url(#mNube)" stroke-width="3" stroke-linecap="round" opacity=".85">' +
+        '<path d="M6 14h28M10 21h24M6 28h26"/></g>';
+      else arte = nuvola(2, 4, '#B8C2CF');
+      // Temperatura dalla stazione Netatmo dell'utente (modulo esterno).
+      var est = states['sensor.casa_rotondo_salotto_esterno_temperature'];
+      var gradi = (est && !isNaN(Number(est.state)))
+        ? Math.round(Number(est.state)) + '°' : '--';
+      var meteo = '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<svg width="40" height="40" viewBox="0 0 40 40">' + D + arte + '</svg>' +
+        '<div style="line-height:1.15;"><div style="font-size:20px;font-weight:700;">' +
+        gradi + '</div><div style="font-size:13px;color:#8A93A0;">' +
+        (CIELO[cond] || cond) + '</div></div></div>';
+
+      // Presenze: iniziale colorata, spenta quando la persona e' fuori.
+      var gente = [['Marco', 'person.marco', '#F5B53D'], ['Anna', 'person.anna', '#FF7EB6']];
+      var avatar = '', dentro = 0;
+      for (var i = 0; i < gente.length; i++) {
+        var s = states[gente[i][1]];
+        var casa = s && s.state === 'home';
+        if (casa) dentro++;
+        var c = gente[i][2];
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+            b = parseInt(c.slice(5,7),16);
+        avatar += '<div title="' + gente[i][0] + '" style="width:38px;height:38px;' +
+          'border-radius:19px;display:grid;place-items:center;font-size:15px;' +
+          'font-weight:800;border:3px solid #0A0C0F;' + (i ? 'margin-left:-10px;' : '') +
+          'background:' + (casa ? 'rgba(' + r + ',' + g + ',' + b + ',.22)' : '#1C222A') +
+          ';color:' + (casa ? c : '#5B6470') + ';">' + gente[i][0].charAt(0) + '</div>';
+      }
+      var chi = dentro === 0 ? 'Nessuno in casa'
+        : (dentro === gente.length ? 'Tutti in casa' : dentro + ' in casa');
+      var presenze = '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div style="display:flex;">' + avatar + '</div>' +
+        '<span style="font-size:15px;color:#B4BBC5;">' + chi + '</span></div>';
+
+      var sep = '<span style="width:1px;height:32px;background:#1C222A;"></span>';
+      var ora = entity ? entity.state : '--:--';
+
+      return '<div style="display:flex;align-items:center;justify-content:space-between;' +
+        'width:100%;color:#EEF0F3;">' +
+        '<div style="display:flex;align-items:baseline;gap:16px;">' +
+        '<span style="font-size:34px;font-weight:800;letter-spacing:-.03em;">' +
+        titolo + '</span><span style="font-size:16px;color:#8A93A0;">' + riga +
+        '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:22px;">' + meteo + sep +
+        presenze + sep +
+        '<span style="font-size:34px;font-weight:700;letter-spacing:-.03em;' +
+        'font-variant-numeric:tabular-nums;">' + ora + '</span></div></div>';
+    ]]]

@@ -1,0 +1,115 @@
+# ATTENZIONE: i [[[ ]]] scritti qui sono calcolati dalla tessera che apre il
+# popup, con la SUA entita': qui dentro usare sempre states['...'], mai entity.
+# Popup "Pompa di calore" (si apre toccando la tessera in Energia).
+#   sinistra: centrale termica adesso, consumi
+#   destra:   ultime 24 ore (mini-graph-card), riscaldamento Ariston e smart grid
+# sensor.pdc_cop esiste solo con la PdC in marcia (oltre 350 W); a riposo si
+# mostra sensor.pdc_cop_ultimo, l'ultimo COP misurato.
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        entity: binary_sensor.stato_pdc
+        variables:
+          titolo: Adesso
+          nota: '[[[ var e = states["binary_sensor.stato_pdc"]; return e && e.state === "on" ? "in marcia" : "a riposo"; ]]]'
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.pdc_cop, variables: {nome: COP adesso, tipo: valore, decimali: 2, icona: 'mdi:speedometer', colore: '#6FD39B'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.pdc_cop_ultimo, variables: {nome: Ultimo COP misurato, tipo: valore, decimali: 2, icona: 'mdi:history', colore: '#8A93A0'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.consumo_attuale_pdc, variables: {nome: Assorbimento, tipo: valore, unita: W, icona: 'mdi:flash', colore: '#FF9F5A'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_potenza_termica_pdc, variables: {nome: Resa termica, tipo: valore, unita: kW, decimali: 1, icona: 'mdi:fire', colore: '#6FD39B'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_mandata_pdc, variables: {nome: Mandata, tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_ritorno_pdc, variables: {nome: Ritorno, tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_delta_t_pdc, variables: {nome: Salto termico, tipo: valore, unita: '°', decimali: 1, icona: 'mdi:delta', colore: '#5CB0FF'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_flusso_pdc, variables: {nome: Portata, tipo: valore, unita: L/min, decimali: 1, icona: 'mdi:pump', colore: '#5CB0FF'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.ariston_ch_flow_setpoint_temp, variables: {nome: Mandata richiesta, tipo: valore, unita: '°', icona: 'mdi:thermometer-chevron-up', colore: '#FF9F5A'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.ariston_errors_count, variables: {nome: Errori Ariston, tipo: valore, icona: 'mdi:alert-circle-outline', colore: '#FF8A80'}}
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Consumi}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.consumo_giornaliero_pdc, variables: {nome: Oggi, tipo: valore, unita: kWh, decimali: 1, icona: 'mdi:calendar-today', colore: '#FFC94D'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.consumo_mensile_pdc, variables: {nome: Questo mese, tipo: valore, unita: kWh, decimali: 1, icona: 'mdi:calendar-month', colore: '#FFC94D'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.tensione_di_rete_pdc, variables: {nome: Tensione, tipo: valore, unita: V, icona: 'mdi:sine-wave', colore: '#A0AEC0'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.corrente_pdc, variables: {nome: Corrente, tipo: valore, unita: A, decimali: 2, icona: 'mdi:current-ac', colore: '#A0AEC0'}}
+
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Ultime 24 ore}
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.consumo_attuale_pdc, name: Assorbimento, color: '#FF9F5A'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 110
+        show: {name: false, icon: false, state: true, legend: true, fill: fade, labels: false}
+        card_mod: &grafico
+          style: |
+            ha-card {
+              background: #12161B !important;
+              border-radius: 22px !important;
+              border: 1px solid rgba(255,255,255,.035) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+              font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+              --primary-text-color: #EEF0F3;
+              --secondary-text-color: #8A93A0;
+            }
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.pdc_cop, name: COP (solo in marcia), color: '#6FD39B'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 90
+        # Niente valore grande: a riposo il COP non esiste e scriverebbe NaN.
+        show: {name: false, icon: false, state: false, legend: true, fill: fade, labels: false}
+        card_mod: *grafico
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.centrale_termica_temperatura_mandata_pdc, name: Mandata, color: '#FF9F5A'}
+          - {entity: sensor.centrale_termica_temperatura_ritorno_pdc, name: Ritorno, color: '#5CB0FF'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 110
+        show: {name: false, icon: false, state: true, legend: true, fill: false, labels: false}
+        card_mod: *grafico
+      - type: custom:button-card
+        template: sezione
+        entity: climate.ariston_f0ad4e093e71_1
+        variables:
+          titolo: Riscaldamento
+          nota: >
+            [[[ var P = {Summer: 'estate', Winter: 'inverno', 'Heating only': 'solo riscaldamento', OFF: 'spento'};
+                var c = states['climate.ariston_f0ad4e093e71_1'];
+                var p = c ? c.attributes.preset_mode : null;
+                return 'Ariston in modalità ' + (P[p] || p || '--'); ]]]
+      - type: custom:button-card
+        template: impostazione
+        entity: input_boolean.automazione_smart_grid_pdc
+        variables: {nome: Smart grid, nota: usa il sole in eccesso per la pompa di calore, icona: 'mdi:solar-power-variant-outline', colore: '#6FD39B'}
+      - type: custom:button-card
+        template: impostazione_valore
+        entity: input_number.t_base_pdc
+        variables: {nome: Temperatura base, nota: 'quella che la PdC mantiene di norma', icona: 'mdi:home-thermometer-outline', colore: '#FF9F5A'}
+      - type: custom:button-card
+        template: impostazione_valore
+        entity: input_number.valore_immissione_pdc
+        variables: {nome: Soglia di immissione, nota: sopra questa potenza ceduta alza la temperatura, icona: 'mdi:transmission-tower-export', colore: '#6FD39B'}

@@ -1,0 +1,192 @@
+# ===========================================================================
+# VISTA "Impostazioni" - dashboard Tablet
+# Gli interruttori e le soglie che prima erano sparsi, raggruppati per tema.
+#   colonna 1: luci automatiche, casa
+#   colonna 2: energia, riscaldamento mattutino
+#   colonna 3: irrigazione e piscina, sistema
+# Gli interruttori commutano al tocco (template impostazione); i valori
+# aprono il dettaglio con il cursore o l'orario (impostazione_valore).
+# La modalita' pannello usa input_boolean.kiosk_tablet (non modalita_kiosk della
+# Mobile). Esclusa di proposito: barzelletta_gemini.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+- type: custom:layout-card
+  view_layout: {grid-column: 3 / span 12, grid-row: 3}
+  layout_type: custom:grid-layout
+  layout:
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+    grid-gap: 14px
+    margin: 0
+    padding: 0
+  cards:
+
+    # ======================= COLONNA 1 =======================
+    - type: vertical-stack
+      cards:
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Luci automatiche, nota: con il movimento}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_luci_cucina
+          variables: {nome: Cucina, nota: 'movimento 2 min, pulsante 10 min', icona: 'mdi:motion-sensor', colore: '#F5B53D'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_luci_porticato
+          variables: {nome: Porticato, nota: con la presenza dalle telecamere, icona: 'mdi:outdoor-lamp', colore: '#F5B53D'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_luci_bagno_giu
+          variables: {nome: Bagno di sotto, icona: 'mdi:motion-sensor', colore: '#F5B53D'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_luci_bagno_su
+          variables: {nome: Bagno di sopra, icona: 'mdi:motion-sensor', colore: '#F5B53D'}
+
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Casa}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.modalita_notte
+          variables: {nome: Modalità notte, icona: 'mdi:weather-night', colore: '#8B9CFF'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_ricarica_tablet
+          variables: {nome: Ricarica del tablet, nota: carica solo quando serve, icona: 'mdi:tablet-cellphone', colore: '#6FD39B'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.blocco_tv_quiz_app
+          variables: {nome: Blocco TV con quiz, icona: 'mdi:television-off', colore: '#FF7EB6'}
+        - type: custom:button-card
+          template: impostazione_valore
+          entity: input_number.durata_timer_tv_min
+          variables: {nome: Durata timer TV, icona: 'mdi:timer-outline', colore: '#FF7EB6'}
+
+    # ======================= COLONNA 2 =======================
+    - type: vertical-stack
+      cards:
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Energia}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_autoconsumo_condizionatori
+          variables: {nome: Autoconsumo clima, nota: condizionatori col sole in eccesso, icona: 'mdi:air-conditioner', colore: '#6FD39B'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_smart_grid_pdc
+          variables: {nome: Smart grid PdC, nota: pompa di calore col sole in eccesso, icona: 'mdi:heat-pump-outline', colore: '#6FD39B'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.solare_nodered
+          variables: {nome: Solare termico, nota: circolatore automatico, icona: 'mdi:solar-panel', colore: '#FFC94D'}
+        - type: custom:button-card
+          template: impostazione_valore
+          entity: input_number.soglia_minimo_accumulo_automazioni
+          variables: {nome: Batteria minima, nota: 'sotto, le automazioni si fermano', icona: 'mdi:battery-50', colore: '#4FD1C5'}
+        - type: custom:button-card
+          template: impostazione_valore
+          entity: input_number.dt_solare_accensione
+          variables: {nome: Salto per il solare, nota: pannelli più caldi del serbatoio, icona: 'mdi:thermometer-chevron-up', colore: '#FFC94D'}
+
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Riscaldamento mattutino}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.abilita_riscaldamento_mattutino
+          variables: {nome: Riscalda il salotto al mattino, icona: 'mdi:sun-thermometer-outline', colore: '#FF9F5A'}
+        - type: custom:button-card
+          template: impostazione_valore
+          entity: input_datetime.ora_riscaldamento_mattutino
+          variables: {nome: Accensione, icona: 'mdi:clock-start', colore: '#FF9F5A'}
+        - type: custom:button-card
+          template: impostazione_valore
+          entity: input_datetime.ora_stop_riscaldamento_mattutino
+          variables: {nome: Spegnimento, icona: 'mdi:clock-end', colore: '#FF9F5A'}
+
+    # ======================= COLONNA 3 =======================
+    - type: vertical-stack
+      cards:
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Irrigazione e piscina}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_programmazione_irrigazione
+          variables: {nome: Programma giardino, icona: 'mdi:sprinkler-variant', colore: '#5CB0FF'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_programmazione_irrigazione_rose
+          variables: {nome: Programma rose, icona: 'mdi:flower-outline', colore: '#5CB0FF'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.automazione_programmazione_irrigazione_goccia
+          variables: {nome: Programma goccia, icona: 'mdi:water-outline', colore: '#5CB0FF'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.ignora_meteo_irrigazione
+          variables: {nome: Ignora la pioggia prevista, icona: 'mdi:weather-rainy', colore: '#5CB0FF'}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.programmazione_pompa_piscina
+          variables:
+            icona: mdi:pool
+            colore: '#4FD1E5'
+            nome: Programma pompa piscina
+            nota: >
+              [[[ var a = states['input_datetime.on_pompa_piscina'], b = states['input_datetime.off_pompa_piscina'];
+                  return a && b ? 'dalle ' + a.state.slice(0, 5) + ' alle ' + b.state.slice(0, 5) : ''; ]]]
+
+        - type: custom:button-card
+          template: sezione
+          variables: {titolo: Sistema}
+        - type: custom:button-card
+          template: impostazione
+          entity: input_boolean.kiosk_tablet
+          variables: {nome: Modalità pannello, nota: spenta mostra la barra laterale di HA, icona: 'mdi:tablet-dashboard', colore: '#5CC8FF'}
+        # Riepilogo calcolato dagli stati: aggiornamenti, batterie sotto il 20%,
+        # dispositivi non raggiungibili tra luci, interruttori, clima e media.
+        # Legata a sensor.time_2: si ricalcola una volta al minuto.
+        - type: custom:button-card
+          template: tessera
+          entity: sensor.time_2
+          styles:
+            card:
+              - height: 150px
+          custom_fields:
+            c: >
+              [[[
+                var tutti = Object.keys(states);
+                var agg = tutti.filter(function (k) { return k.indexOf('update.') === 0 && states[k].state === 'on'; });
+                var bat = tutti.filter(function (k) {
+                  var s = states[k]; var v = Number(s.state);
+                  return s.attributes.device_class === 'battery' && s.attributes.unit_of_measurement === '%' &&
+                    !isNaN(v) && v < 20; });
+                var giu = tutti.filter(function (k) {
+                  var d = k.split('.')[0];
+                  return ['light', 'switch', 'climate', 'media_player', 'cover'].indexOf(d) >= 0 &&
+                    states[k].state === 'unavailable'; });
+                var nome = function (k) { return (states[k].attributes.friendly_name || k).replace(/ Batteria$| Battery level$/i, ''); };
+                var riga = function (icona, col, titolo, n, dettaglio) {
+                  return '<div style="display:flex;align-items:center;gap:12px;">' +
+                    '<ha-icon icon="' + icona + '" style="--mdc-icon-size:20px;width:20px;height:20px;display:flex;' +
+                    'flex:none;color:' + (n ? col : '#6B7480') + ';"></ha-icon><div style="flex:1;min-width:0;text-align:left;">' +
+                    '<div style="font-size:14px;font-weight:700;color:#EEF0F3;">' + titolo + '</div>' +
+                    '<div style="font-size:12.5px;color:#8A93A0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                    dettaglio + '</div></div><span style="font-size:20px;font-weight:800;color:' + (n ? col : '#6B7480') +
+                    ';">' + n + '</span></div>';
+                };
+                return '<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;">' +
+                  riga('mdi:package-up', '#5CB0FF', 'Aggiornamenti', agg.length,
+                       agg.length ? agg.map(nome).join(', ') : 'tutto aggiornato') +
+                  riga('mdi:battery-alert-variant-outline', '#FF8A80', 'Batterie basse', bat.length,
+                       bat.length ? bat.map(function (k) { return nome(k) + ' ' + Math.round(Number(states[k].state)) + '%'; }).join(', ')
+                                  : 'nessuna sotto il 20%') +
+                  riga('mdi:lan-disconnect', '#FFB547', 'Dispositivi offline', giu.length,
+                       giu.length ? 'luci, prese, clima e media non raggiungibili' : 'tutti raggiungibili') +
+                  '</div>';
+              ]]]

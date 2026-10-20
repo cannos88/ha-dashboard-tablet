@@ -1,0 +1,9 @@
+# Token di accesso a Home Assistant: non va mai committato
+ha_token.txt
+*.token
+
+# Prodotti degli strumenti
+strumenti/config.json
+strumenti/prof/
+strumenti/*.png
+__pycache__/

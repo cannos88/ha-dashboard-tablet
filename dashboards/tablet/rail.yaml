@@ -1,0 +1,101 @@
+# ===========================================================================
+# BARRA DI NAVIGAZIONE - dashboard Tablet
+# Un file solo, incluso da tutte le viste. Solo navigazione: orologio, meteo
+# e presenze stanno nella testata, i cancelli nella vista Salotto e Accessi.
+# Il marchio in cima porta alla Panoramica (home); Impostazioni sta in fondo.
+# Ogni voce ha il colore del suo dominio, lo stesso usato nelle tessere.
+# ===========================================================================
+type: custom:mod-card
+view_layout:
+  grid-column: 1
+  grid-row: 1 / -1
+card_mod:
+  style: |
+    ha-card {
+      height: 100%;
+      min-height: 100vh;
+      background: #0D1014 !important;
+      border: none !important;
+      border-right: 1px solid #171B21 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      padding-top: 24px;
+      box-sizing: border-box;
+    }
+card:
+  type: vertical-stack
+  cards:
+    # Marchio: una casa disegnata con i colori dei domini.
+    - type: custom:button-card
+      show_icon: false
+      show_name: false
+      show_state: false
+      tap_action:
+        action: navigate
+        navigation_path: casa
+      styles:
+        card:
+          - width: 80px
+          - margin: 0 auto 14px
+          - padding: 12px 0
+          - border-radius: 20px
+          - background: >
+              [[[
+                var qui = '';
+                try { qui = (location.pathname.split('/').pop() || '').toLowerCase(); }
+                catch (e) {}
+                return qui === 'casa' || qui === 'dashboard-tablet' ? 'rgba(245,181,61,.14)' : 'transparent';
+              ]]]
+          - border: none
+          - box-shadow: none
+        grid:
+          - grid-template-areas: '"c"'
+      custom_fields:
+        c: >
+          [[[
+            return '<svg width="44" height="44" viewBox="0 0 44 44" fill="none" ' +
+              'stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M7 21 22 8l15 13" stroke="#F5B53D" stroke-width="3.2"/>' +
+              '<path d="M11 19v16h22V19" stroke="#EEF0F3" stroke-width="3.2"/>' +
+              '<rect x="18" y="25" width="8" height="10" rx="2" fill="#5CB0FF"/>' +
+              '<circle cx="33" cy="9" r="3.5" fill="#6FD39B"/></svg>';
+          ]]]
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: salotto}
+      variables: {percorso: salotto, nome: Salotto, icona: 'mdi:sofa-outline', colore: '#F5B53D'}
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: stanze}
+      variables: {percorso: stanze, nome: Stanze, icona: 'mdi:view-grid-outline', colore: '#B79CFF'}
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: energia}
+      variables: {percorso: energia, nome: Energia, icona: 'mdi:lightning-bolt-outline', colore: '#6FD39B'}
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: media}
+      variables: {percorso: media, nome: Media, icona: 'mdi:music-note-outline', colore: '#FF7EB6'}
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: accessi}
+      variables: {percorso: accessi, nome: Accessi, icona: 'mdi:gate', colore: '#5CC8FF'}
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: esterno}
+      variables: {percorso: esterno, nome: Esterno, icona: 'mdi:pine-tree', colore: '#8BD45A'}
+    # Impostazioni staccate dalle sezioni della casa da un filo sottile.
+    - type: custom:button-card
+      show_icon: false
+      show_name: false
+      show_state: false
+      tap_action: {action: none}
+      styles:
+        card: [background: none, border: none, box-shadow: none, padding: 4px 0 10px]
+        grid: [grid-template-areas: '"c"']
+      custom_fields:
+        c: '[[[ return "<div style=\"width:40px;height:1px;background:#232A33;margin:0 auto;\"></div>"; ]]]'
+    - type: custom:button-card
+      template: nav_rail
+      tap_action: {action: navigate, navigation_path: impostazioni}
+      variables: {percorso: impostazioni, nome: Impostazioni, icona: 'mdi:cog-outline', colore: '#A0AEC0'}

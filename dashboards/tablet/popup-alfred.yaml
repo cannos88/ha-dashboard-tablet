@@ -1,0 +1,76 @@
+# Popup "Alfred" (dalla tessera in Stanze): mappa del piano scelto, piano, modalita',
+# potenza, base e manutenzione. Nessun [[[ ]]] scritto qui: lo calcolerebbe la
+# tessera che apre il popup. Le scelte usano il template alfred_opzione, la base
+# alfred_base (modelli.yaml).
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Mappa}
+      - type: conditional
+        conditions: [{condition: state, entity: select.alfed_mappa_selezionata, state: Piano Terra}]
+        card: &mappa
+          type: picture-entity
+          entity: image.alfed_piano_terra
+          show_name: false
+          show_state: false
+          tap_action: {action: none}
+          card_mod:
+            style: 'ha-card { border-radius: 22px !important; overflow: hidden; background: #12161B !important; border: none !important; }'
+      - type: conditional
+        conditions: [{condition: state, entity: select.alfed_mappa_selezionata, state: Primo Piano}]
+        card:
+          <<: *mappa
+          entity: image.alfed_primo_piano
+      - type: conditional
+        conditions: [{condition: state, entity: select.alfed_mappa_selezionata, state: 'Sottotetto '}]
+        card:
+          <<: *mappa
+          entity: image.alfed_sottotetto
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Piano}
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.alfed_mappa_selezionata, valore: Piano Terra, nome: Piano terra, colore: '#8B9CFF'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.alfed_mappa_selezionata, valore: Primo Piano, nome: Primo piano, colore: '#8B9CFF'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.alfed_mappa_selezionata, valore: 'Sottotetto ', nome: Sottotetto, colore: '#8B9CFF'}}
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Cosa fa}
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.lavanderia_alfed_cleaning_mode, valore: vacuum, nome: Aspira, icona: 'mdi:robot-vacuum'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.lavanderia_alfed_cleaning_mode, valore: vac_and_mop, nome: Aspira e lava, icona: 'mdi:robot-vacuum-variant'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: select.lavanderia_alfed_cleaning_mode, valore: mop, nome: Lava, icona: 'mdi:water'}}
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Potenza}
+      - type: grid
+        columns: 4
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: vacuum.roborock_q_revo, valore: quiet, nome: Silenziosa, colore: '#F5B53D'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: vacuum.roborock_q_revo, valore: balanced, nome: Media, colore: '#F5B53D'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: vacuum.roborock_q_revo, valore: turbo, nome: Turbo, colore: '#F5B53D'}}
+          - {type: 'custom:button-card', template: alfred_opzione, variables: {entita: vacuum.roborock_q_revo, valore: max, nome: Massima, colore: '#F5B53D'}}
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Base e manutenzione}
+      - type: custom:button-card
+        template: alfred_base
+        styles: {card: [height: 228px]}

@@ -1,0 +1,105 @@
+# ===========================================================================
+# Dashboard "Tablet" - pannello a parete del salotto, 1280x800 landscape
+# Redesign "bento" del 5 ottobre 2026 (sostituisce la versione del 21/09,
+# salvata in backup/pre-bento-20261005).
+#
+# Architettura: ogni vista e' UNA griglia CSS (layout-card grid-layout).
+# Barra e testata ne sono figlie dirette; il contenuto sta nella riga 3 come
+# colonne (vertical-stack) di sezioni, ognuna con la sua larghezza in 12esimi.
+# Le righe seguono il contenuto, non lo schermo: la prima versione divideva
+# l'altezza in tre righe uguali e ogni tessera si gonfiava a riempirle.
+#
+#   colonne: 1 barra (104px) | 2 spaziatore | 3..14 contenuto (12) | 15 margine
+#   righe:   1 margine | 2 testata | 3 contenuto
+#
+# Barra, testata e template stanno ciascuno in un file solo, inclusi da
+# tutte le viste.
+#
+# Entita': la mappatura sui sensori reali e' quella della dashboard Mobile.
+# ===========================================================================
+
+title: Tablet
+
+# Su un pannello a parete l'intestazione di HA e la barra laterale sono solo
+# spazio rubato: le nasconde kiosk-mode. Si spegne da Impostazioni con
+# input_boolean.kiosk_tablet, separato da modalita_kiosk della Mobile: spegnerlo
+# sul tablet non deve far ricomparire la barra sui telefoni. kiosk-mode accetta
+# template JS nei valori e si riaggancia da solo al cambio di stato.
+kiosk_mode:
+  hide_header: |
+    [[[ return is_state('input_boolean.kiosk_tablet', 'on'); ]]]
+  hide_sidebar: |
+    [[[ return is_state('input_boolean.kiosk_tablet', 'on'); ]]]
+
+button_card_templates: !include tablet/modelli.yaml
+
+views:
+  # La Panoramica e' la prima vista: e' la home del pannello.
+  - title: Casa
+    path: casa
+    icon: mdi:home-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: &griglia
+      grid-template-columns: 104px 4px repeat(12, minmax(0, 1fr)) 18px
+      grid-template-rows: 10px 56px auto
+      grid-gap: 14px
+      padding: 0
+      margin: 0
+    cards: !include tablet/vista-casa.yaml
+
+  - title: Salotto
+    path: salotto
+    icon: mdi:sofa-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-salotto.yaml
+
+  - title: Stanze
+    path: stanze
+    icon: mdi:view-grid-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-stanze.yaml
+
+  - title: Energia
+    path: energia
+    icon: mdi:lightning-bolt-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-energia.yaml
+
+  - title: Media
+    path: media
+    icon: mdi:music-note-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-media.yaml
+
+  - title: Accessi
+    path: accessi
+    icon: mdi:gate
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-accessi.yaml
+
+  - title: Esterno
+    path: esterno
+    icon: mdi:pine-tree
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-esterno.yaml
+
+  - title: Impostazioni
+    path: impostazioni
+    icon: mdi:cog-outline
+    theme: tablet_bento
+    type: custom:grid-layout
+    layout: *griglia
+    cards: !include tablet/vista-impostazioni.yaml

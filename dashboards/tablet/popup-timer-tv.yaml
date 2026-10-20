@@ -1,0 +1,56 @@
+# Popup "Timer TV" (dal pulsante nella tessera TV del Salotto). Stessa logica
+# della dashboard Mobile: durata con -/+ (input_number.durata_timer_tv_min),
+# avvia con script.avvia_timer_tv, ferma con timer.cancel su timer.tv_timer.
+# Nessun [[[ ]]] scritto qui: lo calcolerebbe una volta sola il pulsante che
+# apre il popup. Tutto cio' che cambia sta nei template con nome.
+type: vertical-stack
+cards:
+  - type: custom:button-card
+    template: conto_timer
+  - type: custom:button-card
+    template: sezione
+    variables: {titolo: Durata}
+  - type: grid
+    columns: 3
+    square: false
+    cards:
+      - type: custom:button-card
+        template: pulsante
+        variables: {nome: '', icona: 'mdi:minus', colore: '#8B9CFF'}
+        styles: {card: [height: 64px]}
+        tap_action:
+          action: call-service
+          service: input_number.decrement
+          target: {entity_id: input_number.durata_timer_tv_min}
+      - type: custom:button-card
+        template: dato_stanza
+        entity: input_number.durata_timer_tv_min
+        styles: {card: [height: 64px, padding: 0 16px]}
+        variables: {nome: Minuti, tipo: valore, icona: 'mdi:timer-cog-outline', colore: '#8B9CFF'}
+      - type: custom:button-card
+        template: pulsante
+        variables: {nome: '', icona: 'mdi:plus', colore: '#8B9CFF'}
+        styles: {card: [height: 64px]}
+        tap_action:
+          action: call-service
+          service: input_number.increment
+          target: {entity_id: input_number.durata_timer_tv_min}
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: custom:button-card
+        template: pulsante
+        variables: {nome: Avvia, icona: 'mdi:play', colore: '#6FD39B', attivo: true}
+        styles: {card: [height: 60px]}
+        tap_action:
+          action: call-service
+          service: script.avvia_timer_tv
+      - type: custom:button-card
+        template: pulsante
+        variables: {nome: Ferma, icona: 'mdi:stop', colore: '#FF8A80'}
+        styles: {card: [height: 60px]}
+        tap_action:
+          action: call-service
+          service: timer.cancel
+          target: {entity_id: timer.tv_timer}

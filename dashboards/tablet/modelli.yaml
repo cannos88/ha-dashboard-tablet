@@ -1,0 +1,1331 @@
+# ===========================================================================
+# TEMPLATE BUTTON-CARD - dashboard Tablet "bento" (5 ottobre 2026)
+#
+# Sistema visivo, in un posto solo:
+#   fondo #0A0C0F, tessera #12161B, superficie interna #1C222A
+#   testo #EEF0F3, secondario #8A93A0 (5,6:1 sulla tessera)
+#   un colore per ogni dominio, usato per icone e stati attivi:
+#     luci #F5B53D   clima #5CB0FF (caldo #FF9F5A)   energia #6FD39B
+#     media #FF7EB6  accessi #5CC8FF   scene #8B9CFF   guasto #FF8A80
+#   raggi 22 (tessera), 16 (pulsante interno); spazi 12 fra tessere
+# Densita' (revisione del 5/10 pomeriggio): le righe seguono il contenuto,
+# non lo schermo. Ogni gruppo ha un'intestazione ("sezione") e controlli della
+# misura giusta per cio' che fanno: una luce e' una riga da 72px, il clima
+# una tessera grande. Lo spazio che avanza e' respiro, non va riempito.
+# ===========================================================================
+
+# Base di ogni tessera: piatta, riempie la cella, un solo campo libero "c".
+tessera:
+  show_icon: false
+  show_name: false
+  show_state: false
+  # La cella della griglia si allunga, ma il nodo della card no: senza
+  # questo la tessera resta alta quanto il suo contenuto.
+  card_mod:
+    style: |
+      :host { display: block; height: 100%; }
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  styles:
+    card:
+      - font-family: "'Plus Jakarta Sans', system-ui, sans-serif"
+      - height: 100%
+      - box-sizing: border-box
+      - padding: 18px
+      - border-radius: 22px
+      - background: '#12161B'
+      - border: 1px solid rgba(255,255,255,.035)
+      - box-shadow: inset 0 1px 0 rgba(255,255,255,.045)
+      - min-height: 0
+      - overflow: hidden
+    grid:
+      - grid-template-areas: '"c"'
+      - grid-template-columns: 1fr
+      - grid-template-rows: 1fr
+      - height: 100%
+    custom_fields:
+      c:
+        - width: 100%
+        - height: 100%
+        - justify-self: stretch
+        - align-self: stretch
+
+# Pulsante dentro una tessera (cancelli, app TV, telecamere, altoparlanti).
+# variables.colore tinge icona e fondo; variables.attivo lo riempie.
+pulsante:
+  show_icon: false
+  show_name: false
+  show_state: false
+  haptic: light
+  variables:
+    nome: ''
+    icona: ''
+    colore: '#8A93A0'
+    attivo: false
+    # scelta: e' un'opzione di un gruppo (zona, altoparlante, modalita'). Scelta =
+    # fondo tinto e bordo nel colore, non pieno: il pieno resta all'azione principale.
+    scelta: false
+  styles:
+    card:
+      - font-family: "'Plus Jakarta Sans', system-ui, sans-serif"
+      - height: 100%
+      - min-height: 44px
+      - box-sizing: border-box
+      - padding: 0 12px
+      - border-radius: 16px
+      - border: >
+          [[[
+            if (!variables.scelta) return 'none';
+            var c = variables.colore;
+            var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+                b = parseInt(c.slice(5,7),16);
+            return variables.attivo ? '1.5px solid rgba(' + r + ',' + g + ',' + b + ',.75)' : '1.5px solid transparent';
+          ]]]
+      - box-shadow: none
+      - background: >
+          [[[
+            var c = variables.colore;
+            var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+                b = parseInt(c.slice(5,7),16);
+            if (variables.scelta) return variables.attivo ? 'rgba(' + r + ',' + g + ',' + b + ',.18)' : '#1A2028';
+            return variables.attivo ? c : 'rgba(' + r + ',' + g + ',' + b + ',.13)';
+          ]]]
+    grid:
+      - grid-template-areas: '"c"'
+      - grid-template-columns: 1fr
+      - height: 100%
+    custom_fields:
+      c:
+        - justify-self: center
+        - align-self: center
+  custom_fields:
+    c: >
+      [[[
+        var att = variables.attivo && !variables.scelta;
+        var px = variables.piccolo ? 17 : 20;
+        var ic = variables.icona ? '<ha-icon icon="' + variables.icona +
+          '" style="--mdc-icon-size:' + px + 'px;color:' +
+          (att ? '#0A0C0F' : variables.colore) + ';flex:none;"></ha-icon>' : '';
+        return '<div style="display:flex;align-items:center;justify-content:center;' +
+          'gap:' + (variables.piccolo ? 6 : 8) + 'px;font-size:' + (variables.piccolo ? 13.5 : 15) +
+          'px;font-weight:600;white-space:nowrap;color:' +
+          (att ? '#0A0C0F' : '#EEF0F3') + ';">' + ic + variables.nome + '</div>';
+      ]]]
+
+# Voce della barra di navigazione. Ogni voce decide da sola se e' quella
+# attiva confrontando variables.percorso con location.pathname, cosi' la
+# barra resta un file solo per tutte le viste.
+nav_rail:
+  show_icon: false
+  show_name: false
+  show_state: false
+  haptic: light
+  variables:
+    percorso: ''
+    nome: ''
+    icona: ''
+    colore: '#EEF0F3'
+  styles:
+    card:
+      - font-family: "'Plus Jakarta Sans', system-ui, sans-serif"
+      - width: 80px
+      - height: 68px
+      - margin: 0 auto 6px
+      - padding: 0
+      - border-radius: 20px
+      - border: none
+      - box-shadow: none
+      - background: >
+          [[[
+            var qui = '';
+            try { qui = (location.pathname.split('/').pop() || '').toLowerCase(); }
+            catch (e) {}
+            var c = variables.colore;
+            var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+                b = parseInt(c.slice(5,7),16);
+            return qui === variables.percorso
+              ? 'rgba(' + r + ',' + g + ',' + b + ',.16)' : 'transparent';
+          ]]]
+    grid:
+      - grid-template-areas: '"c"'
+      - grid-template-columns: 1fr
+      - height: 100%
+    custom_fields:
+      c:
+        - justify-self: center
+        - align-self: center
+  custom_fields:
+    c: >
+      [[[
+        var qui = '';
+        try { qui = (location.pathname.split('/').pop() || '').toLowerCase(); }
+        catch (e) {}
+        var on = qui === variables.percorso;
+        return '<div style="display:flex;flex-direction:column;align-items:center;' +
+          'gap:6px;">' +
+          '<ha-icon icon="' + variables.icona + '" style="--mdc-icon-size:24px;color:' +
+          (on ? variables.colore : '#8A93A0') + ';"></ha-icon>' +
+          '<span style="font-size:13px;font-weight:' + (on ? '700' : '600') +
+          ';color:' + (on ? '#FFFFFF' : '#B4BCC7') + ';">' + variables.nome +
+          '</span></div>';
+      ]]]
+
+# Tessera azione (scene, script): icona in un cerchio del suo colore.
+tessera_azione:
+  template: tessera
+  haptic: medium
+  variables:
+    nome: ''
+    nota: ''
+    icona: ''
+    colore: '#8B9CFF'
+  custom_fields:
+    c: >
+      [[[
+        var c = variables.colore;
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+            b = parseInt(c.slice(5,7),16);
+        return '<div style="display:flex;flex-direction:column;align-items:center;' +
+          'justify-content:center;gap:12px;height:100%;">' +
+          '<div style="width:60px;height:60px;border-radius:30px;display:grid;' +
+          'place-items:center;background:rgba(' + r + ',' + g + ',' + b + ',.16);">' +
+          '<ha-icon icon="' + variables.icona + '" style="--mdc-icon-size:28px;color:' +
+          c + ';"></ha-icon></div>' +
+          '<div style="text-align:center;"><div style="font-size:16px;font-weight:700;' +
+          'color:#EEF0F3;">' + variables.nome + '</div>' +
+          (variables.nota ? '<div style="font-size:13px;color:#8A93A0;margin-top:2px;">' +
+            variables.nota + '</div>' : '') + '</div></div>';
+      ]]]
+
+# Tessera di stanza (variables.apre = il tocco apre un popup: mostra la freccia).
+# Il corpo JS che decide lo stato e' lo stesso di
+# riga_stanza della dashboard Mobile (verificato su 60 confronti): conta le
+# luci, gestisce le lampade alimentate da un rele' (alim/alimDa), il clima, i
+# media e la catena di sonde. Cambia solo la presentazione.
+stanza_tablet:
+  template: tessera
+  variables:
+    nome: ''
+    icona: ''
+    colore: '#8A93A0'
+    luci: []
+    alim: []
+    alimDa: null
+    media: []
+    clima: null
+    sonde: []
+    apre: false
+  styles:
+    card:
+      - height: 132px
+      - padding: 16px
+      - background: >
+          [[[
+            var L = variables.luci || [];
+            for (var i = 0; i < L.length; i++) {
+              var s = states[L[i]];
+              if (s && s.state === 'on') return '#211C12';
+            }
+            return '#12161B';
+          ]]]
+  custom_fields:
+    c: >
+      [[[
+
+          var luci = variables.luci || [];
+          var alim = variables.alim || [];
+          var alimDa = variables.alimDa || null;
+          var media = variables.media || [];
+          var clima = variables.clima || null;
+          var sonde = variables.sonde || [];
+          var giu = [], accese = 0, ariaOn = false, mediaOn = false, modo = 'off';
+          var vale = function (e) {
+            return e && e.state !== 'unavailable' && e.state !== 'unknown';
+          };
+          for (var i = 0; i < luci.length; i++) {
+            var l = states[luci[i]];
+            if (!vale(l)) { giu.push(0); continue; }
+            if (l.state === 'on') accese++;
+          }
+          // Lampade alimentate da un rele: senza corrente risultano
+          // irraggiungibili, ma sono semplicemente spente. Si contano
+          // come guaste solo se il rele e acceso e loro non rispondono.
+          if (alimDa) {
+            var rele = states[alimDa];
+            var sotto = vale(rele) && rele.state === 'on';
+            for (var w = 0; w < alim.length; w++) {
+              var la = states[alim[w]];
+              if (vale(la)) {
+                if (la.state === 'on') accese++;
+              } else if (sotto) {
+                giu.push(0);
+              }
+            }
+          }
+          if (clima) {
+            var c = states[clima];
+            if (!vale(c)) giu.push(0);
+            else if (c.state !== 'off') { ariaOn = true; modo = c.state; }
+          }
+          for (var k = 0; k < media.length; k++) {
+            var m = states[media[k]];
+            if (vale(m) && m.state === 'playing') mediaOn = true;
+          }
+          var rotta = giu.length > 0;
+
+          // Ordine di preferenza: prima la sonda della stanza, poi
+          // le alternative, e solo per ultimo il condizionatore.
+          var gradi = null;
+          for (var q = 0; q < sonde.length && gradi === null; q++) {
+            var sv = states[sonde[q]];
+            if (vale(sv)) {
+              var nv = Number(sv.state);
+              if (!isNaN(nv)) gradi = nv;
+            }
+          }
+          if (gradi === null && clima) {
+            var cv = states[clima];
+            if (vale(cv) && cv.attributes.current_temperature != null)
+              gradi = Number(cv.attributes.current_temperature);
+          }
+
+          var parti = [];
+          if (accese === 1) parti.push('1 luce accesa');
+          else if (accese > 1) parti.push(accese + ' luci accese');
+          if (ariaOn) parti.push(modo === 'heat' ? 'riscalda' : 'clima acceso');
+          if (mediaOn) parti.push('musica');
+          var stato = parti.length ? parti.join(' · ') : (rotta ? '' : 'tutto spento');
+          stato = stato.charAt(0).toUpperCase() + stato.slice(1);
+          var offline = !rotta ? '' :
+            '<div style="font-size:13px;color:#FF8A80;margin-top:2px;">' +
+            (giu.length === 1 ? '1 dispositivo offline' : giu.length + ' dispositivi offline') +
+            '</div>';
+
+          var col = variables.colore;
+          var r = parseInt(col.slice(1,3),16), g = parseInt(col.slice(3,5),16),
+              b = parseInt(col.slice(5,7),16);
+          var tempCol = gradi === null ? '#8A93A0'
+            : (gradi >= 27 ? '#FF9F5A' : (gradi < 19 ? '#5CB0FF' : '#EEF0F3'));
+
+          // Pastiglie di stato: un colore per dominio, uguale in tutta la dashboard.
+          var past = function (bg, fg, icon, testo) {
+            return '<span style="display:inline-flex;align-items:center;gap:4px;' +
+              'height:26px;padding:0 9px;border-radius:13px;background:' + bg +
+              ';color:' + fg + ';font-size:13px;font-weight:700;">' +
+              '<ha-icon icon="' + icon + '" style="--mdc-icon-size:15px;"></ha-icon>' +
+              testo + '</span>';
+          };
+          var pastiglie = '';
+          if (accese > 0) pastiglie += past('rgba(245,181,61,.18)', '#F5B53D',
+            'mdi:lightbulb-on', accese);
+          if (ariaOn) pastiglie += past(modo === 'heat' ? 'rgba(255,159,90,.18)'
+            : 'rgba(92,176,255,.18)', modo === 'heat' ? '#FF9F5A' : '#5CB0FF',
+            modo === 'heat' ? 'mdi:fire' : 'mdi:snowflake', '');
+          if (mediaOn) pastiglie += past('rgba(255,126,182,.18)', '#FF7EB6',
+            'mdi:music-note', '');
+
+          return '<div style="display:flex;flex-direction:column;justify-content:space-between;' +
+            'height:100%;text-align:left;">' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<div style="width:44px;height:44px;border-radius:15px;display:grid;margin-right:auto;' +
+            'place-items:center;background:rgba(' + r + ',' + g + ',' + b + ',.15);color:' +
+            col + ';"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" ' +
+            'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+            'stroke-linejoin="round">' + variables.icona + '</svg></div>' + pastiglie +
+            (gradi === null ? '' : '<span style="font-size:20px;font-weight:700;margin-left:6px;' +
+              'letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:' + tempCol +
+              ';">' + gradi.toFixed(1).replace('.', ',') + '°</span>') + '</div>' +
+            '<div><div style="display:flex;align-items:center;gap:4px;font-size:17px;' +
+            'font-weight:700;color:#EEF0F3;"><span style="overflow:hidden;' +
+            'text-overflow:ellipsis;white-space:nowrap;">' + variables.nome + '</span>' +
+            // La freccia c'e' solo dove il tocco apre davvero un popup.
+            (variables.apre ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+              'stroke="#6B7480" stroke-width="2.4" stroke-linecap="round" style="flex:none;">' +
+              '<path d="M9 6l6 6-6 6"/></svg>' : '') + '</div>' +
+            (stato ? '<div style="font-size:14px;color:' + (accese > 0 ? '#E8C27A' : '#8A93A0') +
+              ';margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              stato + '</div>' : '') + offline + '</div></div>';
+      ]]]
+
+# Intestazione di sezione: titolo, riepilogo a destra del titolo. Non e' una
+# tessera, sta sul fondo: e' cio' che da' gerarchia alla pagina.
+sezione:
+  show_icon: false
+  show_name: false
+  show_state: false
+  tap_action:
+    action: none
+  variables:
+    titolo: ''
+    nota: ''
+  styles:
+    card:
+      - font-family: "'Plus Jakarta Sans', system-ui, sans-serif"
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 6px 4px 0
+      - overflow: visible
+    grid:
+      - grid-template-areas: '"c"'
+      - grid-template-columns: 1fr
+    custom_fields:
+      c:
+        - justify-self: stretch
+  custom_fields:
+    c: >
+      [[[
+        var nota = variables.nota || '';
+        return '<div style="display:flex;align-items:baseline;gap:10px;text-align:left;">' +
+          '<span style="font-size:12.5px;font-weight:700;letter-spacing:.1em;' +
+          'text-transform:uppercase;color:#C3CAD3;">' +
+          variables.titolo + '</span>' + (nota ? '<span style="font-size:13.5px;color:#97A0AB;">' +
+          nota + '</span>' : '') + '</div>';
+      ]]]
+
+# Luce compatta: una riga da 72px. Accesa = riempita di colore caldo,
+# leggibile da tutta la stanza; irraggiungibile = bordo tratteggiato rosso.
+# Tap accende e spegne, tocco prolungato apre il cursore della luminosita'.
+luce_riga:
+  template: tessera
+  haptic: light
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  variables:
+    nome: ''
+    icona: mdi:lightbulb-outline
+    testo_on: Accesa
+    testo_off: Spenta
+    # Lampade alimentate da un rele' (Camera Luca): senza corrente risultano
+    # irraggiungibili ma sono solo spente, come nel conteggio delle stanze.
+    alimDa: null
+    # Lampade che un dispositivo a monte alimenta solo dal tramonto (Lampioni):
+    # di giorno irraggiungibili e' normale, di notte resta un guasto.
+    dal_tramonto: false
+  styles:
+    card:
+      - height: 72px
+      - padding: 0 16px 0 12px
+      - border-radius: 20px
+      - background: >
+          [[[ return (entity && entity.state === 'on') ? '#F7D58C' : '#12161B'; ]]]
+      - border: >
+          [[[ return (entity && entity.state === 'on') ? '1px solid transparent'
+                     : '1px solid rgba(255,255,255,.035)'; ]]]
+  custom_fields:
+    c: >
+      [[[
+        var e = entity;
+        var muta = !e || e.state === 'unavailable' || e.state === 'unknown';
+        var rele = variables.alimDa ? states[variables.alimDa] : null;
+        var senzaCorrente = muta && rele && rele.state === 'off';
+        var sole = states['sun.sun'];
+        var diGiorno = muta && variables.dal_tramonto && sole && sole.state === 'above_horizon';
+        if (diGiorno) senzaCorrente = true;
+        if (senzaCorrente) muta = false;
+        var on = !muta && !senzaCorrente && e.state === 'on';
+        var lum = null;
+        if (on && e.attributes.brightness != null)
+          lum = Math.round((Number(e.attributes.brightness) / 255) * 100);
+        var ic = muta ? '#FF8A80' : (on ? '#8A5200' : '#D9A84A');
+        var fondo = muta ? 'rgba(255,138,128,.12)' : (on ? 'rgba(138,82,0,.14)' : 'rgba(245,181,61,.12)');
+        var stato = muta ? 'Non risponde' : (diGiorno ? 'Dal tramonto' : senzaCorrente ? 'Senza corrente'
+          : (on ? variables.testo_on : variables.testo_off));
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="width:46px;height:46px;border-radius:15px;flex:none;display:grid;' +
+          'place-items:center;background:' + fondo + ';"><ha-icon icon="' + variables.icona +
+          '" style="--mdc-icon-size:24px;width:24px;height:24px;display:flex;color:' + ic +
+          ';"></ha-icon></div>' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:700;color:' +
+          (on ? '#2A1B00' : '#EEF0F3') + ';white-space:nowrap;overflow:hidden;' +
+          'text-overflow:ellipsis;">' + variables.nome + '</div><div style="font-size:14px;color:' +
+          (muta ? '#FF8A80' : (on ? '#6B4A12' : '#8A93A0')) + ';">' + stato + '</div></div>' +
+          (lum === null ? '' : '<span style="font-size:20px;font-weight:800;color:#2A1B00;' +
+            'font-variant-numeric:tabular-nums;">' + lum + '<span style="font-size:13px;' +
+            'color:#6B4A12;">%</span></span>') + '</div>';
+      ]]]
+
+# Azione compatta (scene, script): riga da 64px, icona nel suo colore.
+azione_riga:
+  template: tessera
+  haptic: medium
+  variables:
+    nome: ''
+    icona: ''
+    colore: '#8B9CFF'
+    compatta: false
+  styles:
+    card:
+      - height: 64px
+      - padding: 0 14px 0 10px
+      - border-radius: 20px
+  custom_fields:
+    c: >
+      [[[
+        var c = variables.colore;
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16),
+            b = parseInt(c.slice(5,7),16);
+        // compatta: icona piu' piccola, per le tessere strette (telecamere).
+        var d = variables.compatta ? 36 : 44, gap = variables.compatta ? 10 : 12, ic = variables.compatta ? 19 : 22;
+        return '<div style="display:flex;align-items:center;gap:' + gap + 'px;height:100%;min-width:0;">' +
+          '<div style="width:' + d + 'px;height:' + d + 'px;border-radius:' + d / 2 + 'px;flex:none;display:grid;' +
+          'place-items:center;background:rgba(' + r + ',' + g + ',' + b + ',.16);">' +
+          '<ha-icon icon="' + variables.icona + '" style="--mdc-icon-size:' + ic + 'px;' +
+          'width:' + ic + 'px;height:' + ic + 'px;display:flex;color:' + c + ';"></ha-icon></div>' +
+          '<span style="font-size:15px;font-weight:700;color:#EEF0F3;white-space:nowrap;overflow:hidden;' +
+          'text-overflow:ellipsis;min-width:0;">' + variables.nome + '</span></div>';
+      ]]]
+
+# Quadrante del clima (vista Salotto e popup delle stanze). L'arco e' la
+# temperatura impostata (16-30), il punto bianco quella misurata (prima sonda
+# valida di variables.sonde, altrimenti il condizionatore), il colore la
+# modalita'. -/+ passano da script.clima_step, come nella Mobile, che rispetta
+# minimo, massimo e passo del singolo condizionatore. variables.modi aggiunge
+# la riga Spento / Fresco / Caldo / Deumidifica.
+# I pulsanti sono card annidate: i loro template [[[ ]]] leggono l'entita' della
+# card madre, per questo entity_id arriva come template.
+clima_quadrante:
+  template: tessera
+  hold_action:
+    action: more-info
+  variables:
+    sonde: []
+    modi: false
+  styles:
+    card:
+      - background: >
+          [[[
+            var M = {cool: '92,176,255', heat: '255,159,90', heat_cool: '183,156,255',
+                     dry: '79,209,197', fan_only: '160,174,192'};
+            var m = entity ? M[entity.state] : null;
+            return m ? 'linear-gradient(180deg, rgba(' + m + ',.14), #12161B 70%)' : '#12161B';
+          ]]]
+    grid:
+      - grid-template-areas: >
+          [[[ return variables.modi
+                ? '"c c c c c c c c c c c c" "meno meno meno meno pow pow pow pow piu piu piu piu" "m1 m1 m1 m2 m2 m2 m3 m3 m3 m4 m4 m4"'
+                : '"c c c c c c c c c c c c" "meno meno meno meno pow pow pow pow piu piu piu piu"'; ]]]
+      - grid-template-columns: repeat(12, 1fr)
+      - grid-template-rows: >
+          [[[ return variables.modi ? '1fr 56px 48px' : '1fr 60px'; ]]]
+      - gap: 10px
+    custom_fields:
+      m1: [display: "[[[ return variables.modi ? 'block' : 'none'; ]]]"]
+      m2: [display: "[[[ return variables.modi ? 'block' : 'none'; ]]]"]
+      m3: [display: "[[[ return variables.modi ? 'block' : 'none'; ]]]"]
+      m4: [display: "[[[ return variables.modi ? 'block' : 'none'; ]]]"]
+  custom_fields:
+    c: >
+      [[[
+        var e = entity;
+        var muto = !e || e.state === 'unavailable' || e.state === 'unknown';
+        var modo = muto ? 'off' : e.state;
+        var COL = {cool: '#5CB0FF', heat: '#FF9F5A', heat_cool: '#B79CFF',
+                   dry: '#4FD1C5', fan_only: '#A0AEC0', off: '#5B6470'};
+        var NOME = {cool: 'Raffresca', heat: 'Riscalda', heat_cool: 'Automatico',
+                    dry: 'Deumidifica', fan_only: 'Ventilazione', off: 'Spento'};
+        var col = COL[modo] || '#A0AEC0';
+        var target = muto ? null : Number(e.attributes.temperature);
+        var ora = muto ? null : Number(e.attributes.current_temperature);
+        // La sonda della stanza, se c'e', vale piu' del sensore del condizionatore.
+        var S = variables.sonde || [];
+        for (var q = 0; q < S.length; q++) {
+          var sv = states[S[q]];
+          if (sv && !isNaN(Number(sv.state)) && sv.state !== '') { ora = Number(sv.state); break; }
+        }
+
+        var MIN = 16, MAX = 30, CX = 130, CY = 120, R = 98;
+        var punto = function (t) {
+          var f = Math.max(0, Math.min(1, (t - MIN) / (MAX - MIN)));
+          var a = (135 + 270 * f) * Math.PI / 180;
+          return [CX + R * Math.cos(a), CY + R * Math.sin(a), f];
+        };
+        var arco = function (f) {
+          var a0 = 135 * Math.PI / 180, a1 = (135 + 270 * f) * Math.PI / 180;
+          var x0 = CX + R * Math.cos(a0), y0 = CY + R * Math.sin(a0);
+          var x1 = CX + R * Math.cos(a1), y1 = CY + R * Math.sin(a1);
+          return 'M ' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A ' + R + ' ' + R +
+            ' 0 ' + (270 * f > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1);
+        };
+        // Tacche ogni grado, piu' lunghe ogni 2: danno scala al quadrante.
+        var tacche = '';
+        for (var t = MIN; t <= MAX; t++) {
+          var a = (135 + 270 * (t - MIN) / (MAX - MIN)) * Math.PI / 180;
+          var r1 = R - 18, r2 = R - (t % 2 === 0 ? 26 : 22);
+          tacche += '<line x1="' + (CX + r1 * Math.cos(a)).toFixed(1) + '" y1="' +
+            (CY + r1 * Math.sin(a)).toFixed(1) + '" x2="' + (CX + r2 * Math.cos(a)).toFixed(1) +
+            '" y2="' + (CY + r2 * Math.sin(a)).toFixed(1) + '" stroke="#2A323D" ' +
+            'stroke-width="2" stroke-linecap="round"/>';
+        }
+        var svg = '<svg viewBox="0 0 260 230" style="width:100%;max-width:236px;display:block;' +
+          'margin:0 auto;">' + tacche +
+          '<path d="' + arco(1) + '" fill="none" stroke="#1C222A" stroke-width="14" ' +
+          'stroke-linecap="round"/>';
+        if (target !== null && !isNaN(target)) {
+          svg += '<path d="' + arco(punto(target)[2]) + '" fill="none" stroke="' + col +
+            '" stroke-width="14" stroke-linecap="round"/>';
+        }
+        if (ora !== null && !isNaN(ora)) {
+          var p = punto(ora);
+          svg += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) +
+            '" r="9" fill="#EEF0F3" stroke="#12161B" stroke-width="4"/>';
+        }
+        svg += '<text x="' + CX + '" y="' + (CY + 14) + '" text-anchor="middle" ' +
+          'font-size="56" font-weight="800" letter-spacing="-2" fill="' +
+          (modo === 'off' ? '#8A93A0' : '#EEF0F3') + '">' +
+          (target === null || isNaN(target) ? '--' : target.toFixed(0)) + '°</text>' +
+          '<text x="' + CX + '" y="' + (CY + 42) + '" text-anchor="middle" font-size="15" ' +
+          'fill="#8A93A0">ora ' + (ora === null || isNaN(ora) ? '--'
+            : ora.toFixed(1).replace('.', ',')) + '°</text></svg>';
+
+        return '<div style="display:flex;flex-direction:column;height:100%;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:15px;color:#8A93A0;">Condizionatore</div>' +
+          '<span style="display:inline-flex;align-items:center;gap:6px;height:30px;' +
+          'padding:0 12px;border-radius:15px;font-size:14px;font-weight:700;color:' + col +
+          ';background:#1C222A;"><span style="width:8px;height:8px;border-radius:4px;' +
+          'background:' + col + ';"></span>' + (muto ? 'Non risponde' : NOME[modo] || modo) +
+          '</span></div>' +
+          '<div style="flex:1;display:flex;align-items:center;">' + svg + '</div></div>';
+      ]]]
+    meno:
+      card:
+        type: custom:button-card
+        template: pulsante
+        variables: {nome: '', icona: 'mdi:minus', colore: '#5CB0FF'}
+        tap_action:
+          action: call-service
+          service: script.clima_step
+          data:
+            entita: '[[[ return entity.entity_id; ]]]'
+            delta: -1
+    pow:
+      card:
+        type: custom:button-card
+        template: pulsante
+        entity: '[[[ return entity.entity_id; ]]]'
+        variables:
+          nome: ''
+          icona: 'mdi:power'
+          colore: '#EEF0F3'
+          attivo: '[[[ return entity && entity.state !== "off" && entity.state !== "unavailable"; ]]]'
+        tap_action:
+          action: call-service
+          service: climate.toggle
+          target:
+            entity_id: '[[[ return entity.entity_id; ]]]'
+    piu:
+      card:
+        type: custom:button-card
+        template: pulsante
+        variables: {nome: '', icona: 'mdi:plus', colore: '#FF9F5A'}
+        tap_action:
+          action: call-service
+          service: script.clima_step
+          data:
+            entita: '[[[ return entity.entity_id; ]]]'
+            delta: 1
+    m1:
+      card:
+        type: custom:button-card
+        template: pulsante
+        entity: '[[[ return entity.entity_id; ]]]'
+        variables:
+          nome: Spento
+          colore: '#8A93A0'
+          scelta: true
+          attivo: '[[[ return entity && entity.state === "off"; ]]]'
+        styles:
+          card: [font-size: 14px]
+        tap_action:
+          action: call-service
+          service: climate.set_hvac_mode
+          target:
+            entity_id: '[[[ return entity.entity_id; ]]]'
+          data:
+            hvac_mode: 'off'
+    m2:
+      card:
+        type: custom:button-card
+        template: pulsante
+        entity: '[[[ return entity.entity_id; ]]]'
+        variables:
+          nome: Fresco
+          colore: '#5CB0FF'
+          scelta: true
+          attivo: '[[[ return entity && entity.state === "cool"; ]]]'
+        styles:
+          card: [font-size: 14px]
+        tap_action:
+          action: call-service
+          service: climate.set_hvac_mode
+          target:
+            entity_id: '[[[ return entity.entity_id; ]]]'
+          data:
+            hvac_mode: 'cool'
+    m3:
+      card:
+        type: custom:button-card
+        template: pulsante
+        entity: '[[[ return entity.entity_id; ]]]'
+        variables:
+          nome: Caldo
+          colore: '#FF9F5A'
+          scelta: true
+          attivo: '[[[ return entity && entity.state === "heat"; ]]]'
+        styles:
+          card: [font-size: 14px]
+        tap_action:
+          action: call-service
+          service: climate.set_hvac_mode
+          target:
+            entity_id: '[[[ return entity.entity_id; ]]]'
+          data:
+            hvac_mode: 'heat'
+    m4:
+      card:
+        type: custom:button-card
+        template: pulsante
+        entity: '[[[ return entity.entity_id; ]]]'
+        variables:
+          nome: Deumidifica
+          colore: '#4FD1C5'
+          scelta: true
+          attivo: '[[[ return entity && entity.state === "dry"; ]]]'
+        styles:
+          card: [font-size: 14px]
+        tap_action:
+          action: call-service
+          service: climate.set_hvac_mode
+          target:
+            entity_id: '[[[ return entity.entity_id; ]]]'
+          data:
+            hvac_mode: 'dry'
+
+# Dato d'ambiente nei popup delle stanze: etichetta, valore grande, icona nel
+# colore del suo significato. variables.tipo decide unita' e soglie:
+# temperatura, umidita, co2, batteria, luce, presenza, apertura, porta,
+# valore (generico con unita') e acceso (on/off con testi propri).
+dato_stanza:
+  template: tessera
+  hold_action:
+    action: more-info
+  variables:
+    nome: ''
+    tipo: temperatura
+  styles:
+    card:
+      - height: 92px
+      - padding: 14px 16px
+  custom_fields:
+    c: >
+      [[[
+        var e = entity, t = variables.tipo;
+        var muto = !e || e.state === 'unavailable' || e.state === 'unknown';
+        var v = muto ? NaN : Number(e.state);
+        var valore = '--', col = '#EEF0F3', icona = 'mdi:help-circle-outline', tinta = '#8A93A0';
+        var dec = function (x, n) { return x.toFixed(n).replace('.', ','); };
+        if (t === 'temperatura') {
+          icona = 'mdi:thermometer'; tinta = '#FF9F5A';
+          if (!isNaN(v)) { valore = dec(v, 1) + '°'; col = v >= 27 ? '#FF9F5A' : (v < 19 ? '#5CB0FF' : '#EEF0F3'); }
+        } else if (t === 'umidita') {
+          icona = 'mdi:water-percent'; tinta = '#5CB0FF';
+          if (!isNaN(v)) { valore = Math.round(v) + '%'; col = (v > 65 || v < 35) ? '#FFB547' : '#EEF0F3'; }
+        } else if (t === 'co2') {
+          icona = 'mdi:molecule-co2'; tinta = '#6FD39B';
+          if (!isNaN(v)) { valore = Math.round(v) + '<span style="font-size:13px;color:#8A93A0;"> ppm</span>';
+            col = v > 1400 ? '#FF8A80' : (v > 1000 ? '#FFB547' : '#6FD39B'); }
+        } else if (t === 'batteria') {
+          icona = 'mdi:battery-medium'; tinta = '#8A93A0';
+          if (!isNaN(v)) { valore = Math.round(v) + '%'; col = v < 20 ? '#FF8A80' : '#EEF0F3';
+            icona = v < 20 ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-high'; tinta = v < 20 ? '#FF8A80' : '#6FD39B'; }
+        } else if (t === 'luce') {
+          icona = 'mdi:brightness-5'; tinta = '#FFC94D';
+          if (!isNaN(v)) valore = Math.round(v) + '<span style="font-size:13px;color:#8A93A0;"> lx</span>';
+        } else if (t === 'presenza') {
+          var p = !muto && e.state === 'on';
+          icona = p ? 'mdi:account' : 'mdi:account-outline'; tinta = p ? '#B79CFF' : '#6B7480';
+          valore = muto ? '--' : (p ? 'Qualcuno' : 'Nessuno'); col = p ? '#B79CFF' : '#EEF0F3';
+        } else if (t === 'valore') {
+          // Generico: variables.unita, variables.decimali, variables.icona, variables.colore.
+          icona = variables.icona || 'mdi:information-outline'; tinta = variables.colore || '#8A93A0';
+          if (!isNaN(v)) valore = dec(v, variables.decimali || 0) + (variables.unita ?
+            '<span style="font-size:13px;color:#8A93A0;"> ' + variables.unita + '</span>' : '');
+          else if (!muto) valore = e.state;
+        } else if (t === 'acceso') {
+          var ac = !muto && e.state === 'on';
+          icona = variables.icona || 'mdi:power'; tinta = ac ? (variables.colore || '#6FD39B') : '#6B7480';
+          valore = muto ? '--' : (ac ? (variables.testo_on || 'Acceso') : (variables.testo_off || 'Spento'));
+          col = ac ? tinta : '#EEF0F3';
+        } else if (t === 'porta') {
+          var po = !muto && e.state === 'on';
+          icona = po ? 'mdi:door-open' : 'mdi:door-closed'; tinta = po ? '#FFB547' : '#5CC8FF';
+          valore = muto ? '--' : (po ? 'Aperta' : 'Chiusa'); col = po ? '#FFB547' : '#EEF0F3';
+        } else if (t === 'apertura') {
+          var a = !muto && e.state === 'on';
+          icona = a ? 'mdi:window-open-variant' : 'mdi:window-closed-variant'; tinta = a ? '#FFB547' : '#5CC8FF';
+          valore = muto ? '--' : (a ? 'Aperta' : 'Chiusa'); col = a ? '#FFB547' : '#EEF0F3';
+        }
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:13px;color:#8A93A0;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' + variables.nome + '</div>' +
+          '<div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:2px;' +
+          'font-variant-numeric:tabular-nums;color:' + col + ';">' + valore + '</div></div>' +
+          '<ha-icon icon="' + icona + '" style="--mdc-icon-size:24px;width:24px;height:24px;' +
+          'display:flex;color:' + tinta + ';"></ha-icon></div>';
+      ]]]
+
+# Pastiglia della fascia di stato della Panoramica: icona nel colore del
+# dominio, titolo e valore. variables.attivo la accende (fondo tinto),
+# variables.allerta la segnala in ambra (es. un cancello aperto).
+stato_casa:
+  template: tessera
+  haptic: light
+  variables:
+    icona: ''
+    colore: '#8A93A0'
+    titolo: ''
+    valore: ''
+    attivo: false
+    allerta: false
+  styles:
+    card:
+      - height: 68px
+      - padding: 0 16px 0 12px
+      - background: >
+          [[[
+            var c = variables.allerta ? '#FFB547' : variables.colore;
+            var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+            return (variables.attivo || variables.allerta) ? 'rgba(' + r + ',' + g + ',' + b + ',.12)' : '#12161B';
+          ]]]
+  custom_fields:
+    c: >
+      [[[
+        var c = variables.allerta ? '#FFB547' : variables.colore;
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+        var acceso = variables.attivo || variables.allerta;
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="width:40px;height:40px;border-radius:14px;flex:none;display:grid;place-items:center;' +
+          'background:rgba(' + r + ',' + g + ',' + b + ',' + (acceso ? '.22' : '.12') + ');">' +
+          '<ha-icon icon="' + variables.icona + '" style="--mdc-icon-size:22px;width:22px;height:22px;' +
+          'display:flex;color:' + c + ';"></ha-icon></div>' +
+          '<div style="min-width:0;"><div style="font-size:13px;color:#8A93A0;">' + variables.titolo + '</div>' +
+          '<div style="font-size:15px;font-weight:700;color:' + (acceso ? c : '#EEF0F3') + ';white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' + variables.valore + '</div></div></div>';
+      ]]]
+
+# Piscina disegnata: l'acqua si muove quando la pompa gira. Stato pompa,
+# programma orario, consumo di oggi e luci. Usata in Panoramica ed Esterno.
+piscina:
+  template: tessera
+  entity: switch.pompapiscina
+  triggers_update:
+    - sensor.pompapiscina_power
+    - input_boolean.programmazione_pompa_piscina
+    - input_datetime.on_pompa_piscina
+    - input_datetime.off_pompa_piscina
+    - sensor.consumo_giornaliero_pompa_piscina
+    - light.luci_piscina
+  custom_fields:
+    c: >
+          [[[
+            var on = entity && entity.state === 'on';
+            var p = states['sensor.pompapiscina_power'];
+            var w = p && !isNaN(Number(p.state)) ? Math.round(Number(p.state)) : null;
+            var prog = states['input_boolean.programmazione_pompa_piscina'];
+            var da = states['input_datetime.on_pompa_piscina'], a = states['input_datetime.off_pompa_piscina'];
+            var hm = function (s) { return s && s.state ? s.state.slice(0, 5) : '--'; };
+            var kwh = states['sensor.consumo_giornaliero_pompa_piscina'];
+            var luci = states['light.luci_piscina'];
+            var testoLuci = !luci || ['unavailable', 'unknown'].indexOf(luci.state) >= 0 ? 'non raggiungibili'
+              : (luci.state === 'on' ? 'accese' : 'spente');
+            var vasca = '<svg width="150" height="110" viewBox="0 0 150 110" style="flex:none;">' +
+              '<defs><linearGradient id="acqua" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" ' +
+              'stop-color="' + (on ? '#4FD1E5' : '#3B7F9A') + '"/><stop offset="100%" stop-color="' +
+              (on ? '#1E6FB8' : '#1D3F5C') + '"/></linearGradient>' +
+              '<radialGradient id="riflesso" cx="30%" cy="25%" r="60%"><stop offset="0" stop-color="#fff" stop-opacity=".35"/>' +
+              '<stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
+              '<linearGradient id="travertino" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#faf6ee"/>' +
+              '<stop offset=".5" stop-color="#e7dfd0"/><stop offset="1" stop-color="#c9bfae"/></linearGradient>' +
+              '<linearGradient id="pcromo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#64748b"/>' +
+              '<stop offset=".5" stop-color="#f8fafc"/><stop offset="1" stop-color="#94a3b8"/></linearGradient>' +
+              '<filter id="pombra" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="4" stdDeviation="4" ' +
+              'flood-color="#000" flood-opacity=".45"/></filter>' +
+              '<clipPath id="bordo"><rect x="11" y="23" width="128" height="74" rx="17"/></clipPath></defs>' +
+              '<style>@keyframes onda{from{transform:translateX(0)}to{transform:translateX(-40px)}}' +
+              '.onda{' + (on ? 'animation:onda 3s linear infinite;' : '') + '}</style>' +
+              '<rect x="4" y="16" width="142" height="88" rx="22" fill="url(#travertino)" stroke="#a8a29e" stroke-width="1" filter="url(#pombra)"/>' +
+              '<rect x="10" y="22" width="130" height="76" rx="18" fill="#0f3b57"/>' +
+              '<rect x="11" y="23" width="128" height="74" rx="17" fill="url(#acqua)"/>' +
+              '<rect x="11" y="23" width="128" height="10" fill="#000" opacity=".18" clip-path="url(#bordo)"/>' +
+              '<g clip-path="url(#bordo)" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5" ' +
+              'stroke-linecap="round"><g class="onda">' +
+              '<path d="M0 46q10-6 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0 20 0"/>' +
+              '<path d="M0 66q10-6 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0 20 0"/>' +
+              '<path d="M0 86q10-6 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0 20 0"/></g></g>' +
+              '<rect x="11" y="23" width="128" height="74" rx="17" fill="url(#riflesso)"/>' +
+              '<g stroke="url(#pcromo)" stroke-width="3.5" stroke-linecap="round" fill="none" filter="url(#pombra)">' +
+              '<path d="M112 34V10q0-5 5-5M126 34V10q0-5 5-5M112 18h14M112 28h14"/></g></svg>';
+            var riga = function (et, v, col) {
+              return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;">' +
+                '<span style="color:#8A93A0;">' + et + '</span><span style="font-weight:700;color:' +
+                (col || '#EEF0F3') + ';">' + v + '</span></div>';
+            };
+            return '<div style="display:flex;align-items:center;gap:16px;height:100%;text-align:left;">' +
+              vasca + '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;">' +
+              '<div style="font-size:17px;font-weight:700;color:' + (on ? '#4FD1E5' : '#EEF0F3') + ';">' +
+              (on ? 'Pompa in funzione' : 'Pompa ferma') + (on && w !== null ? ' · ' + w + ' W' : '') + '</div>' +
+              riga('Programma', prog && prog.state === 'on' ? hm(da) + ' – ' + hm(a) : 'disattivato') +
+              riga('Consumo oggi', kwh ? Number(kwh.state).toFixed(2).replace('.', ',') + ' kWh' : '--') +
+              riga('Luci', testoLuci, testoLuci === 'non raggiungibili' ? '#FF8A80' : null) +
+              '</div></div>';
+          ]]]
+
+# Zona di irrigazione: goccia che si riempie di blu quando la valvola e' aperta,
+# prossima partenza dal calendario (schedule.next_event), ultima irrigazione.
+# Al tocco il dettaglio della valvola: niente aperture accidentali.
+zona_irrigua:
+  template: tessera
+  hold_action:
+    action: more-info
+  tap_action:
+    action: more-info
+  variables:
+    nome: ''
+    programma: null
+    calendario: null
+    ultima: null
+    timer: null
+  styles:
+    card:
+      - height: 72px
+      - padding: 0 16px 0 12px
+      - background: >
+          [[[ return entity && (entity.state === 'open' || entity.state === 'on') ? 'rgba(92,176,255,.14)' : '#12161B'; ]]]
+  custom_fields:
+    c: >
+      [[[
+        var e = entity;
+        var muta = !e || e.state === 'unavailable' || e.state === 'unknown';
+        var aperta = !muta && ['open', 'on', 'opening', 'active'].indexOf(e.state) >= 0;
+        var prog = variables.programma ? states[variables.programma] : null;
+        var cal = variables.calendario ? states[variables.calendario] : null;
+        var ult = variables.ultima ? states[variables.ultima] : null;
+        var quando = function (iso) {
+          var d = new Date(iso); if (isNaN(d)) return '--';
+          var oggi = new Date(); var dom = new Date(); dom.setDate(oggi.getDate() + 1);
+          var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+          if (d.toDateString() === oggi.toDateString()) return 'oggi ' + hm;
+          if (d.toDateString() === dom.toDateString()) return 'domani ' + hm;
+          return d.getDate() + '/' + (d.getMonth() + 1) + ' ' + hm;
+        };
+        var riga1, col1;
+        if (muta) { riga1 = 'Non risponde'; col1 = '#FF8A80'; }
+        else if (aperta) {
+          // Con il timer del programma attivo, anche quanto manca.
+          var tm = variables.timer ? states[variables.timer] : null;
+          var resto = tm && tm.state === 'active' && tm.attributes.finishes_at
+            ? Math.max(0, Math.ceil((new Date(tm.attributes.finishes_at) - Date.now()) / 60000)) : null;
+          riga1 = 'Sta irrigando' + (resto === null ? '' : ' · ancora ' + resto + ' min'); col1 = '#5CB0FF';
+        }
+        else if (prog && prog.state !== 'on') { riga1 = 'Programma spento'; col1 = '#8A93A0'; }
+        else if (cal && cal.attributes.next_event) { riga1 = 'Prossima ' + quando(cal.attributes.next_event); col1 = '#A9B1BC'; }
+        else { riga1 = 'Chiusa'; col1 = '#8A93A0'; }
+        var data = function (iso) { var d = new Date(iso); return isNaN(d) ? '--' : d.getDate() + '/' + (d.getMonth() + 1); };
+        var riga2 = ult && ult.state && ult.state !== 'unknown' ? 'ultima ' + data(ult.state.replace(' ', 'T')) : '';
+        /* Irrigatore a scomparsa realistico: testina cromata nel prato; mentre irriga spruzza
+           getti animati. */
+        var goccia = '<svg width="40" height="40" viewBox="0 0 40 40">' +
+          '<defs><linearGradient id="irCromo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#64748b"/>' +
+          '<stop offset=".45" stop-color="#f8fafc"/><stop offset="1" stop-color="#64748b"/></linearGradient>' +
+          '<radialGradient id="irPrato" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#4C9A4E"/><stop offset="1" stop-color="#1F4D2A"/></radialGradient></defs>' +
+          '<style>.irGetto{stroke-dasharray:2 4;animation:irGetto .6s linear infinite}' +
+          '@keyframes irGetto{to{stroke-dashoffset:-12}}@media (prefers-reduced-motion:reduce){.irGetto{animation:none}}</style>' +
+          '<g transform="translate(0 ' + (aperta ? 2 : -6) + ')">' +
+          '<ellipse cx="20" cy="33" rx="16" ry="5" fill="url(#irPrato)"/>' +
+          (aperta ? '<g class="irGetto" fill="none" stroke="#8CCBFF" stroke-width="1.8" stroke-linecap="round">' +
+            '<path d="M18 18q-8 -6 -15 4"/><path d="M22 18q8 -6 15 4"/><path d="M20 17q0 -9 0 -13"/>' +
+            '<path d="M19 17q-4 -9 -9 -10"/><path d="M21 17q4 -9 9 -10"/></g>' : '') +
+          '<rect x="16" y="' + (aperta ? 17 : 25) + '" width="8" height="' + (aperta ? 16 : 8) + '" rx="2" fill="url(#irCromo)"/>' +
+          '<rect x="14" y="' + (aperta ? 15 : 24) + '" width="12" height="3.5" rx="1.5" fill="' + (muta ? '#FF8A80' : '#334155') + '"/>' +
+          '<ellipse cx="20" cy="33" rx="6" ry="1.6" fill="#0f172a" opacity=".5"/></g></svg>';
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="width:46px;height:46px;border-radius:15px;flex:none;display:grid;place-items:center;' +
+          'background:rgba(92,176,255,' + (aperta ? '.18' : '.08') + ');">' + goccia + '</div>' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:700;color:#EEF0F3;">' + variables.nome +
+          '</div><div style="font-size:13px;color:' + col1 + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+          riga1 + (riga2 ? '<span style="color:#6B7480;"> · ' + riga2 + '</span>' : '') + '</div></div></div>';
+      ]]]
+
+# Pianta dell'orto (integrazione plant): umidita' del terreno e cosa non va,
+# tradotto (il primo problema). Pallino ambra se c'e' qualcosa da controllare;
+# '%' = umidita' del terreno, '°' = temperatura dell'aria per chi non ha la sonda.
+pianta:
+  template: tessera
+  hold_action:
+    action: more-info
+  tap_action:
+    action: more-info
+  variables:
+    nome: ''
+  styles:
+    card:
+      - height: 96px
+      - padding: 12px 14px
+  custom_fields:
+    c: >
+      [[[
+        var e = entity;
+        var id = e ? e.entity_id.split('.')[1] : '';
+        // Umidita' del terreno; le piante senza sonda nel terreno (ciliegino,
+        // datterino) mostrano la temperatura dell'aria.
+        var um = states['sensor.' + id + '_soil_moisture'];
+        var ta = states['sensor.' + id + '_temperature'];
+        var v = '--', cosaV = 'terreno';
+        if (um && !isNaN(Number(um.state))) v = Math.round(Number(um.state)) + '%';
+        else if (ta && !isNaN(Number(ta.state))) { v = Number(ta.state).toFixed(1).replace('.', ',') + '°'; cosaV = 'aria'; }
+        var COSA = {moisture: {High: 'troppo bagnata', Low: 'da annaffiare'},
+                    conductivity: {High: 'troppo concime', Low: 'poco concime'},
+                    dli: {High: 'troppa luce', Low: 'poca luce'}, illuminance: {High: 'troppa luce', Low: 'poca luce'},
+                    temperature: {High: 'troppo caldo', Low: 'troppo freddo'},
+                    soil_temperature: {High: 'terreno caldo', Low: 'terreno freddo'},
+                    humidity: {High: 'aria umida', Low: 'aria secca'}};
+        var probl = (e && e.attributes.problems) || [];
+        var testi = [];
+        probl.forEach(function (p) {
+          var t = COSA[p.sensor_type] && COSA[p.sensor_type][p.status];
+          if (t && testi.indexOf(t) < 0) testi.push(t);
+        });
+        var ok = e && e.state === 'ok';
+        var col = !e || e.state === 'unavailable' ? '#8A93A0' : (ok ? '#6FD39B' : '#FFB547');
+        return '<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;text-align:left;">' +
+          '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:4px;' +
+          'flex:none;background:' + col + ';"></span><span style="font-size:13px;font-weight:700;letter-spacing:-.01em;color:#EEF0F3;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + variables.nome + '</span></div>' +
+          '<div style="font-size:22px;font-weight:800;color:#EEF0F3;font-variant-numeric:tabular-nums;" title="' +
+          cosaV + '">' + v + '</div>' +
+          '<div style="font-size:12px;color:' + col + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+          (ok ? 'tutto bene' : (testi.length ? testi[0] : 'da controllare')) + '</div></div>';
+      ]]]
+
+# Impostazione on/off (input_boolean): icona del suo tema, nome, descrizione e
+# un interruttore disegnato. Il tocco commuta: e' una pagina di impostazioni.
+impostazione:
+  template: tessera
+  haptic: light
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  variables:
+    nome: ''
+    nota: ''
+    icona: mdi:cog-outline
+    colore: '#A0AEC0'
+  styles:
+    card:
+      - height: 56px
+      - padding: 0 14px 0 10px
+      - border-radius: 18px
+  custom_fields:
+    c: >
+      [[[
+        var on = entity && entity.state === 'on';
+        var muta = !entity || entity.state === 'unavailable';
+        var c = variables.colore;
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+        var leva = '<div style="width:46px;height:28px;border-radius:14px;flex:none;position:relative;' +
+          'background:' + (on ? '#E6EAF0' : '#2A323D') + ';transition:background .2s;"><div style="position:absolute;top:3px;' +
+          'left:' + (on ? '21px' : '3px') + ';width:22px;height:22px;border-radius:11px;background:' +
+          (on ? '#0A0C0F' : '#8A93A0') + ';transition:left .2s;"></div></div>';
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="width:40px;height:40px;border-radius:13px;flex:none;display:grid;place-items:center;' +
+          'background:rgba(' + r + ',' + g + ',' + b + ',' + (on ? '.20' : '.10') + ');"><ha-icon icon="' + variables.icona +
+          '" style="--mdc-icon-size:20px;width:20px;height:20px;display:flex;color:' + (on ? c : '#8A93A0') + ';"></ha-icon></div>' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#EEF0F3;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' + variables.nome + '</div>' +
+          (variables.nota ? '<div style="font-size:12.5px;color:#8A93A0;white-space:nowrap;overflow:hidden;' +
+            'text-overflow:ellipsis;">' + variables.nota + '</div>' : '') + '</div>' +
+          (muta ? '<span style="font-size:12px;color:#FF8A80;">non disp.</span>' : leva) + '</div>';
+      ]]]
+
+# Impostazione a valore (input_number, input_datetime, input_select): nome e valore in una
+# pastiglia; il tocco apre il dettaglio con il cursore o l'orario.
+impostazione_valore:
+  template: impostazione
+  tap_action:
+    action: more-info
+  custom_fields:
+    c: >
+      [[[
+        var e = entity;
+        var c = variables.colore;
+        var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+        var v = '--';
+        if (e && e.state !== 'unavailable' && e.state !== 'unknown') {
+          if (e.entity_id.indexOf('input_datetime.') === 0) v = e.state.slice(0, 5);
+          else {
+            var n = Number(e.state), u = e.attributes.unit_of_measurement || variables.unita || '';
+            if (u === 'mins' || u === 'Min') u = 'min';
+            // Testo (input_select): il valore cosi' com'e'.
+            v = isNaN(n) ? e.state : (Math.round(n * 10) / 10).toString().replace('.', ',') + (u ? ' ' + u : '');
+          }
+        }
+        return '<div style="display:flex;align-items:center;gap:12px;height:100%;text-align:left;">' +
+          '<div style="width:40px;height:40px;border-radius:13px;flex:none;display:grid;place-items:center;' +
+          'background:rgba(' + r + ',' + g + ',' + b + ',.16);"><ha-icon icon="' + variables.icona +
+          '" style="--mdc-icon-size:20px;width:20px;height:20px;display:flex;color:' + c + ';"></ha-icon></div>' +
+          '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#EEF0F3;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' + variables.nome + '</div>' +
+          (variables.nota ? '<div style="font-size:12.5px;color:#8A93A0;white-space:nowrap;overflow:hidden;' +
+            'text-overflow:ellipsis;">' + variables.nota + '</div>' : '') + '</div>' +
+          '<span style="flex:none;padding:5px 11px;border-radius:12px;background:#1A2028;font-size:15px;font-weight:700;' +
+          'color:#EEF0F3;font-variant-numeric:tabular-nums;">' + v + '</span></div>';
+      ]]]
+
+# Riga di comandi dentro una tessera: etichetta, tre pulsanti, seconda
+# etichetta e altri tre pulsanti (b1..b6); con variables.largo la seconda
+# meta' e' un solo pulsante largo (t), sotto b4..b6. Ogni campo del template
+# deve avere un posto nelle aree: un campo senza area finisce in una colonna
+# implicita in fondo e stringe tutte le altre. I pulsanti li passa la card.
+barra_comandi:
+  show_icon: false
+  show_name: false
+  show_state: false
+  tap_action:
+    action: none
+  variables:
+    etichetta1: ''
+    etichetta2: ''
+    largo: false
+  styles:
+    card:
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+      - height: 100%
+      - overflow: visible
+    grid:
+      - grid-template-areas: >
+          [[[ return variables.largo ? '"l1 b1 b2 b3 l2 t t t"' : '"l1 b1 b2 b3 l2 b4 b5 b6"'; ]]]
+      - grid-template-columns: 64px repeat(3, minmax(0, 1fr)) 38px repeat(3, minmax(0, 1fr))
+      - gap: 8px
+      - height: 100%
+    custom_fields:
+      l1: [justify-self: start, align-self: center]
+      l2: [justify-self: center, align-self: center]
+      t: [justify-self: stretch, align-self: stretch]
+  custom_fields:
+    l1: >
+      [[[ return '<span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;' +
+          'color:#6B7480;">' + variables.etichetta1 + '</span>'; ]]]
+    l2: >
+      [[[ return variables.largo ? '' : '<span style="font-size:12px;font-weight:700;letter-spacing:.06em;' +
+          'text-transform:uppercase;color:#6B7480;">' + variables.etichetta2 + '</span>'; ]]]
+
+# Conto alla rovescia del timer TV: anello che si svuota, minuti rimanenti e
+# ora in cui la TV si spegne. Template con nome perche' dentro un popup i
+# [[[ ]]] scritti in linea li calcola la card che lo apre, una volta sola.
+conto_timer:
+  template: tessera
+  entity: timer.tv_timer
+  triggers_update:
+    - sensor.time_2
+    - input_number.durata_timer_tv_min
+  styles:
+    card:
+      - height: 200px
+  custom_fields:
+    c: >
+      [[[
+        var t = entity;
+        var att = t && t.state === 'active' && t.attributes.finishes_at;
+        var dur = states['input_number.durata_timer_tv_min'];
+        var durMin = dur ? Number(dur.state) : 30;
+        var rest = 0, tot = durMin, fine = '';
+        if (att) {
+          var fin = new Date(t.attributes.finishes_at);
+          rest = Math.max(0, (fin - Date.now()) / 60000);
+          var p = String(t.attributes.duration || '').split(':');
+          if (p.length === 3) tot = Number(p[0]) * 60 + Number(p[1]) + Number(p[2]) / 60;
+          fine = ('0' + fin.getHours()).slice(-2) + ':' + ('0' + fin.getMinutes()).slice(-2);
+        }
+        var f = att ? Math.max(0, Math.min(1, rest / Math.max(1, tot))) : 1;
+        var R = 62, L = 2 * Math.PI * R;
+        var col = att ? '#8B9CFF' : '#2A323D';
+        var anello = '<svg width="150" height="150" viewBox="0 0 150 150" style="flex:none;">' +
+          '<circle cx="75" cy="75" r="' + R + '" fill="none" stroke="#1C222A" stroke-width="12"/>' +
+          '<circle cx="75" cy="75" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="12" ' +
+          'stroke-linecap="round" stroke-dasharray="' + (L * f).toFixed(1) + ' ' + L.toFixed(1) + '" ' +
+          'transform="rotate(-90 75 75)"/>' +
+          '<text x="75" y="80" text-anchor="middle" font-size="34" font-weight="800" fill="' +
+          (att ? '#EEF0F3' : '#6B7480') + '">' + (att ? Math.ceil(rest) : Math.round(durMin)) + '</text>' +
+          '<text x="75" y="102" text-anchor="middle" font-size="13" fill="#8A93A0">minuti</text></svg>';
+        return '<div style="display:flex;align-items:center;gap:22px;height:100%;text-align:left;">' + anello +
+          '<div><div style="font-size:20px;font-weight:700;color:' + (att ? '#8B9CFF' : '#EEF0F3') + ';">' +
+          (att ? 'Timer attivo' : 'Timer spento') + '</div><div style="font-size:15px;color:#8A93A0;margin-top:6px;' +
+          'line-height:1.4;">' + (att ? 'La TV si spegne alle ' + fine : 'Avvialo per spegnere la TV<br>tra ' +
+          Math.round(durMin) + ' minuti') + '</div></div></div>';
+      ]]]
+
+# Pulsante compatto per le righe di comandi (tessera TV): piu' basso, icona e
+# testo piu' piccoli.
+pulsante_mini:
+  template: pulsante
+  variables:
+    piccolo: true
+  styles:
+    card:
+      - min-height: 34px
+      - padding: 0 8px
+      - border-radius: 12px
+
+# Stazione radio preferita (vista Media): logo, nome; evidenziata se e' l'ultima
+# avviata (input_text.radio_ultima). Avvia con script.radio_play sulla zona
+# scelta in input_select.zona_audio, come la Mobile.
+radio_stazione:
+  template: tessera
+  haptic: light
+  entity: input_text.radio_ultima
+  variables:
+    nome: ''
+    uri: ''
+    logo: ''
+  tap_action:
+    action: call-service
+    service: script.radio_play
+    data:
+      uri: '[[[ return variables.uri; ]]]'
+  styles:
+    card:
+      - height: 60px
+      - padding: 0 10px
+      - border-radius: 16px
+      - background: >
+          [[[ return entity && entity.state === variables.uri ? 'rgba(255,126,182,.16)' : '#1A2028'; ]]]
+      - border: >
+          [[[ return entity && entity.state === variables.uri ? '1px solid rgba(255,126,182,.55)' : '1px solid transparent'; ]]]
+  custom_fields:
+    c: >
+      [[[
+        var on = entity && entity.state === variables.uri;
+        return '<div style="display:flex;align-items:center;gap:10px;height:100%;text-align:left;">' +
+          '<img src="' + variables.logo + '" style="width:40px;height:40px;border-radius:10px;object-fit:cover;' +
+          'flex:none;background:#0A0C0F;">' +
+          '<span style="font-size:14px;font-weight:700;line-height:1.2;color:' + (on ? '#FF9FC8' : '#EEF0F3') +
+          ';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' +
+          variables.nome + '</span></div>';
+      ]]]
+
+# Avviso della Panoramica: pastiglia colorata, icona e testo, toccabile verso
+# la vista dove si interviene. Si nasconde da sola (hidden di button-card) quando
+# variables.attivo e' falso: la riga mostra solo gli avvisi presenti.
+avviso:
+  template: tessera
+  haptic: light
+  variables:
+    attivo: false
+    testo: ''
+    icona: mdi:alert-circle-outline
+    colore: '#FFB547'
+  hidden: '[[[ return !variables.attivo; ]]]'
+  styles:
+    card:
+      - height: 34px
+      - padding: 0 14px 0 10px
+      - border-radius: 17px
+      - background: >
+          [[[ var c = variables.colore;
+              var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+              return 'rgba(' + r + ',' + g + ',' + b + ',.14)'; ]]]
+      - border: >
+          [[[ var c = variables.colore;
+              var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+              return '1px solid rgba(' + r + ',' + g + ',' + b + ',.35)'; ]]]
+  custom_fields:
+    c: >
+      [[[ return '<div style="display:flex;align-items:center;gap:8px;height:100%;">' +
+          '<ha-icon icon="' + variables.icona + '" style="--mdc-icon-size:18px;width:18px;height:18px;display:flex;' +
+          'flex:none;color:' + variables.colore + ';"></ha-icon><span style="font-size:13px;font-weight:700;' +
+          'color:#EEF0F3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + variables.testo +
+          '</span></div>'; ]]]
+
+# Opzione di Alfred nel popup (modalita', potenza, piano): pulsante "scelta" che si
+# accende quando l'entita' ha quel valore. Template per nome perche' i [[[ ]]] scritti
+# nel contenuto del popup li calcolerebbe la tessera che lo apre, al momento del tocco.
+#   entita: select.* (select_option) o vacuum.* (set_fan_speed, confronta fan_speed)
+alfred_opzione:
+  template: pulsante
+  variables:
+    entita: ''
+    valore: ''
+    scelta: true
+    colore: '#5CC8FF'
+    attivo: >
+      [[[ var e = states[variables.entita]; if (!e) return false;
+          return (variables.entita.indexOf('vacuum.') === 0 ? e.attributes.fan_speed : e.state) === variables.valore; ]]]
+  triggers_update: all
+  styles:
+    card:
+      - height: 48px
+  tap_action:
+    action: call-service
+    service: '[[[ return variables.entita.indexOf("vacuum.") === 0 ? "vacuum.set_fan_speed" : "select.select_option"; ]]]'
+    target:
+      entity_id: '[[[ return variables.entita; ]]]'
+    data: >
+      [[[ return variables.entita.indexOf('vacuum.') === 0 ? {fan_speed: variables.valore} : {option: variables.valore}; ]]]
+
+# Base e manutenzione di Alfred (popup): acqua pulita, mocio, errori della base e
+# quanto manca a spazzole, filtro e sensori (i sensori danno secondi; negativi = scaduti).
+alfred_base:
+  template: tessera
+  entity: vacuum.roborock_q_revo
+  triggers_update:
+    - binary_sensor.roborock_q_revo_mancanza_d_acqua
+    - sensor.alfed_errore_nella_base
+    - binary_sensor.roborock_q_revo_panno_attaccato
+    - sensor.alfed_tempo_residuo_della_spazzola_principale
+    - sensor.alfed_tempo_residuo_della_spazzola_laterale
+    - sensor.alfed_tempo_di_filtraggio_rimanente
+    - sensor.alfed_tempo_residuo_del_sensore
+  styles:
+    card:
+      - height: 100%
+      - padding: 14px 16px
+  custom_fields:
+    c: >
+      [[[
+        var s = function (id) { return states[id]; };
+        var riga = function (nome, val, col) {
+          return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0;' +
+            'border-bottom:1px solid #1C222A;"><span style="color:#A9B1BC;">' + nome + '</span><span style="font-weight:700;color:' +
+            (col || '#EEF0F3') + ';text-align:right;">' + val + '</span></div>';
+        };
+        var secca = s('binary_sensor.roborock_q_revo_mancanza_d_acqua'), eb = s('sensor.alfed_errore_nella_base');
+        var mocio = s('binary_sensor.roborock_q_revo_panno_attaccato');
+        var tempo = function (id, scaduto) {
+          var e = s(id); if (!e || isNaN(Number(e.state))) return ['--', null];
+          var sec = Number(e.state);
+          if (sec <= 0) return [scaduto || 'da sostituire', '#FF8A80'];
+          var g = sec / 86400;
+          return [g >= 2 ? Math.round(g) + ' giorni' : Math.round(sec / 3600) + ' ore', g < 3 ? '#F5B53D' : null];
+        };
+        var EB = {ok: 'tutto a posto', water_empty: "manca l'acqua pulita", waste_water_tank_full: 'acqua sporca piena',
+          no_dustbin: 'manca il sacchetto', duct_blockage: 'condotto ostruito', dirty_tank_latch_open: 'serbatoio sporco aperto',
+          cleaning_tank_full_or_blocked: 'vaschetta di lavaggio piena', maintenance_brush_jammed: 'spazzola della base bloccata'};
+        var ebs = eb ? eb.state : 'unknown';
+        var t1 = tempo('sensor.alfed_tempo_residuo_della_spazzola_principale'), t2 = tempo('sensor.alfed_tempo_residuo_della_spazzola_laterale'),
+            t3 = tempo('sensor.alfed_tempo_di_filtraggio_rimanente'), t4 = tempo('sensor.alfed_tempo_residuo_del_sensore', 'da pulire');
+        return '<div style="display:flex;flex-direction:column;text-align:left;">' +
+          riga('Base', EB[ebs] || ebs.replace(/_/g, ' '), ebs === 'ok' ? '#6FD39B' : '#FF8A80') +
+          riga('Acqua pulita', secca && secca.state === 'on' ? 'da riempire' : 'ok', secca && secca.state === 'on' ? '#FF8A80' : '#6FD39B') +
+          riga('Mocio', mocio && mocio.state === 'on' ? 'montato' : 'non montato', mocio && mocio.state === 'on' ? null : '#F5B53D') +
+          riga('Spazzola principale', t1[0], t1[1]) + riga('Spazzola laterale', t2[0], t2[1]) +
+          riga('Filtro', t3[0], t3[1]) + riga('Pulizia sensori', t4[0], t4[1]) + '</div>';
+      ]]]

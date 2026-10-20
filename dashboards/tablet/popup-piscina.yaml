@@ -1,0 +1,97 @@
+# Popup "Piscina" (dalla tessera in Esterno). Stesse funzioni della dashboard
+# principale: pompa, luci, modalita' Party/Relax e automazione oraria con gli
+# orari di avvio e stop (input_datetime.on/off_pompa_piscina).
+# Nessun [[[ ]]] scritto qui: lo calcolerebbe la tessera che apre il popup.
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Adesso}
+      - type: custom:button-card
+        template: piscina
+        styles: {card: [height: 168px]}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:button-card
+            template: luce_riga
+            entity: switch.pompapiscina
+            variables: {nome: Pompa, icona: 'mdi:pump', testo_on: In funzione, testo_off: Ferma}
+          - type: custom:button-card
+            template: luce_riga
+            entity: light.luci_piscina
+            variables: {nome: Luci piscina, icona: 'mdi:pool'}
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Modalità, nota: per un'ora}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:button-card
+            template: azione_riga
+            variables: {nome: Party, icona: 'mdi:party-popper', colore: '#FF7EB6'}
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              target: {entity_id: script.piscina_party_mode_1_ora}
+          - type: custom:button-card
+            template: azione_riga
+            variables: {nome: Relax, icona: 'mdi:spa-outline', colore: '#4FD1C5'}
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              target: {entity_id: script.piscina_relax_mode_1_ora}
+
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Programmazione, nota: tocca un orario per cambiarlo}
+      - type: custom:button-card
+        template: impostazione
+        entity: input_boolean.programmazione_pompa_piscina
+        variables: {nome: Accensione automatica, nota: la pompa segue gli orari qui sotto, icona: 'mdi:calendar-clock', colore: '#4FD1E5'}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_datetime.on_pompa_piscina
+            variables: {nome: Avvio, icona: 'mdi:clock-start', colore: '#6FD39B'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_datetime.off_pompa_piscina
+            variables: {nome: Stop, icona: 'mdi:clock-end', colore: '#FF8A80'}
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Ultime 24 ore}
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.pompapiscina_power, name: Potenza pompa, color: '#4FD1E5'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 110
+        show: {name: false, icon: false, state: true, legend: false, fill: fade, labels: false}
+        card_mod:
+          style: |
+            ha-card {
+              background: #12161B !important;
+              border-radius: 22px !important;
+              border: 1px solid rgba(255,255,255,.035) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+              font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+              --primary-text-color: #EEF0F3;
+              --secondary-text-color: #8A93A0;
+            }

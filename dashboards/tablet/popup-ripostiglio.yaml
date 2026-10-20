@@ -1,0 +1,50 @@
+# GENERATO da genera-stanze.py: popup della stanza "Ripostiglio".
+# Non modificare qui: cambia la tabella STANZE e rilancia lo script.
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+- type: vertical-stack
+  cards:
+  - type: custom:button-card
+    template: sezione
+    entity: light.luce_ripostiglio
+    variables:
+      titolo: Luci
+      nota: |-
+        [[[
+          var L = ['light.luce_ripostiglio'];
+          var n = 0;
+          for (var i = 0; i < L.length; i++) if (states[L[i]] && states[L[i]].state === 'on') n++;
+          return n === 0 ? 'tutto spento' : (n === 1 ? '1 accesa' : n + ' accese');
+        ]]]
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: custom:button-card
+      template: luce_riga
+      entity: light.luce_ripostiglio
+      variables:
+        nome: Luce
+        icona: mdi:ceiling-light-outline
+- type: vertical-stack
+  cards:
+  - type: custom:button-card
+    template: sezione
+    variables:
+      titolo: Ambiente
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: custom:button-card
+      template: dato_stanza
+      entity: binary_sensor.portaripostiglio_contact
+      variables:
+        nome: Porta
+        tipo: porta

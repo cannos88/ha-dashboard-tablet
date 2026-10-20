@@ -1,0 +1,281 @@
+# ===========================================================================
+# VISTA "Esterno" - dashboard Tablet
+#   fascia: meteo locale (stazione Netatmo dell'utente; vento da MeteoRadar)
+#   sinistra (7/12): irrigazione, luci esterne, orto
+#   destra   (5/12): piscina, varchi e telecamere
+# Piscina e zone di irrigazione al tocco aprono i loro popup di gestione
+# (popup-piscina.yaml, popup-irrigazione.yaml); le piante il dettaglio. Le luci esterne si accendono e spengono al tocco,
+# come quelle delle stanze. Gli interruttori dei programmi (irrigazione,
+# piscina) stanno in Impostazioni.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+- type: vertical-stack
+  view_layout: {grid-column: 3 / span 12, grid-row: 3}
+  cards:
+
+    # ---------------- METEO LOCALE ----------------
+    - type: grid
+      columns: 5
+      square: false
+      cards:
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.casa_rotondo_salotto_esterno_temperature
+          hold_action: {action: more-info}
+          variables:
+            icona: mdi:thermometer
+            colore: '#FF9F5A'
+            titolo: Temperatura
+            valore: '[[[ var v = Number(entity.state); return isNaN(v) ? "--" : v.toFixed(1).replace(".", ",") + "°"; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.casa_rotondo_salotto_esterno_humidity
+          hold_action: {action: more-info}
+          variables:
+            icona: mdi:water-percent
+            colore: '#5CB0FF'
+            titolo: Umidità
+            valore: '[[[ var v = Number(entity.state); return isNaN(v) ? "--" : Math.round(v) + "%"; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.salotto_salotto_salotto_pluviometro_rain_today
+          hold_action: {action: more-info}
+          variables:
+            icona: mdi:weather-pouring
+            colore: '#5CB0FF'
+            titolo: Pioggia oggi
+            valore: '[[[ var v = Number(entity.state); return isNaN(v) ? "--" : v.toFixed(1).replace(".", ",") + " mm"; ]]]'
+            attivo: '[[[ return Number(entity.state) > 0; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.salotto_salotto_salotto_pluviometro_rain
+          hold_action: {action: more-info}
+          variables:
+            icona: mdi:weather-rainy
+            colore: '#5CB0FF'
+            titolo: Sta piovendo?
+            valore: '[[[ var v = Number(entity.state); return isNaN(v) ? "--" : (v > 0 ? "sì, " + v.toFixed(1).replace(".", ",") + " mm" : "no"); ]]]'
+            attivo: '[[[ return Number(entity.state) > 0; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.meteoradar_current_wind_speed
+          triggers_update: [sensor.meteoradar_current_wind_direction]
+          hold_action: {action: more-info}
+          variables:
+            icona: mdi:weather-windy
+            colore: '#A0AEC0'
+            titolo: Vento
+            valore: >
+              [[[ var v = Number(entity.state); if (isNaN(v)) return '--';
+                  var d = states['sensor.meteoradar_current_wind_direction'];
+                  var R = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+                  var dir = d && !isNaN(Number(d.state)) ? ' da ' + R[Math.round(Number(d.state) / 45) % 8] : '';
+                  return Math.round(v * 3.6) + ' km/h' + dir; ]]]
+
+    - type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr)
+        grid-gap: 14px
+        margin: 0
+        padding: 0
+      cards:
+
+        # ======================= SINISTRA =======================
+        - type: vertical-stack
+          cards:
+            - type: custom:button-card
+              template: sezione
+              entity: input_boolean.ignora_meteo_irrigazione
+              variables:
+                titolo: Irrigazione
+                nota: '[[[ return entity && entity.state === "on" ? "ignora la pioggia prevista" : "si ferma se è prevista pioggia"; ]]]'
+            - type: grid
+              columns: 2
+              square: false
+              cards:
+                - type: custom:button-card
+                  template: zona_irrigua
+                  entity: valve.irrigazione_l1
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                        title: Irrigazione
+                        size: wide
+                        content: !include popup-irrigazione.yaml
+                  triggers_update: [schedule.irrigazione_giardino, input_boolean.automazione_programmazione_irrigazione, input_datetime.last_irrigation_run_giardino]
+                  variables: {nome: Giardino anteriore, programma: input_boolean.automazione_programmazione_irrigazione,
+                              calendario: schedule.irrigazione_giardino, ultima: input_datetime.last_irrigation_run_giardino, timer: timer.irrigazione_giardino}
+                - type: custom:button-card
+                  template: zona_irrigua
+                  entity: valve.irrigazione_l2
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                        title: Irrigazione
+                        size: wide
+                        content: !include popup-irrigazione.yaml
+                  triggers_update: [schedule.irrigazione_giardino, input_boolean.automazione_programmazione_irrigazione, input_datetime.last_irrigation_run_giardino]
+                  variables: {nome: Giardino laterale, programma: input_boolean.automazione_programmazione_irrigazione,
+                              calendario: schedule.irrigazione_giardino, ultima: input_datetime.last_irrigation_run_giardino, timer: timer.irrigazione_giardino}
+                - type: custom:button-card
+                  template: zona_irrigua
+                  entity: valve.irrigazione_l3
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                        title: Irrigazione
+                        size: wide
+                        content: !include popup-irrigazione.yaml
+                  triggers_update: [schedule.irrigazione_rose, input_boolean.automazione_programmazione_irrigazione_rose, input_datetime.last_irrigation_run_rose]
+                  variables: {nome: Rose, programma: input_boolean.automazione_programmazione_irrigazione_rose,
+                              calendario: schedule.irrigazione_rose, ultima: input_datetime.last_irrigation_run_rose, timer: timer.irrigazione_rose}
+                - type: custom:button-card
+                  template: zona_irrigua
+                  entity: switch.valvolairrigazionegoccia
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                        title: Irrigazione
+                        size: wide
+                        content: !include popup-irrigazione.yaml
+                  triggers_update: [schedule.irrigazione_a_goccia, input_boolean.automazione_programmazione_irrigazione_goccia, input_datetime.last_irrigation_run_goccia]
+                  variables: {nome: Goccia, programma: input_boolean.automazione_programmazione_irrigazione_goccia,
+                              calendario: schedule.irrigazione_a_goccia, ultima: input_datetime.last_irrigation_run_goccia, timer: timer.irrigazione_goccia}
+
+            - type: custom:button-card
+              template: sezione
+              entity: light.luci_porticato
+              triggers_update: [light.luce_esterno_garage, light.lampionibbq, switch.shelly_lucibbq_channel_1, light.lampioni_giardino, switch.presazanzareporticato]
+              variables:
+                titolo: Luci esterne
+                nota: >
+                  [[[ var L = ['light.luci_porticato', 'light.luce_esterno_garage', 'light.lampionibbq',
+                               'switch.shelly_lucibbq_channel_1', 'light.lampioni_giardino'];
+                      var n = L.filter(function (l) { return states[l] && states[l].state === 'on'; }).length;
+                      return n === 0 ? 'tutte spente' : (n === 1 ? '1 accesa' : n + ' accese'); ]]]
+            - type: grid
+              columns: 3
+              square: false
+              cards:
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: light.luci_porticato
+                  variables: {nome: Porticato, icona: 'mdi:outdoor-lamp'}
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: light.luce_esterno_garage
+                  variables: {nome: Garage, icona: 'mdi:wall-sconce-flat-outline'}
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: light.lampioni_giardino
+                  triggers_update: [sun.sun]
+                  variables: {nome: Lampioni, icona: 'mdi:post-lamp', dal_tramonto: true}
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: light.lampionibbq
+                  variables: {nome: Lampioni BBQ, icona: 'mdi:post-lamp'}
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: switch.shelly_lucibbq_channel_1
+                  variables: {nome: Luci BBQ, icona: 'mdi:string-lights'}
+                - type: custom:button-card
+                  template: luce_riga
+                  entity: switch.presazanzareporticato
+                  variables: {nome: Zanzariera, icona: 'mdi:bug-outline'}
+
+            - type: custom:button-card
+              template: sezione
+              entity: plant.basilico
+              triggers_update: [plant.aneto, plant.prezzemolo, plant.ciliegino_rosso, plant.datterino_giallo]
+              variables:
+                titolo: Orto
+                nota: >
+                  [[[ var P = ['plant.basilico', 'plant.aneto', 'plant.prezzemolo', 'plant.ciliegino_rosso', 'plant.datterino_giallo'];
+                      var n = P.filter(function (p) { return states[p] && states[p].state === 'problem'; }).length;
+                      return n === 0 ? 'tutte in salute' : (n === 1 ? '1 pianta da controllare' : n + ' piante da controllare'); ]]]
+            - type: grid
+              columns: 5
+              square: false
+              cards:
+                - {type: 'custom:button-card', template: pianta, entity: plant.basilico, variables: {nome: Basilico}}
+                - {type: 'custom:button-card', template: pianta, entity: plant.prezzemolo, variables: {nome: Prezzemolo}}
+                - {type: 'custom:button-card', template: pianta, entity: plant.aneto, variables: {nome: Aneto}}
+                - {type: 'custom:button-card', template: pianta, entity: plant.ciliegino_rosso, variables: {nome: Ciliegino}}
+                - {type: 'custom:button-card', template: pianta, entity: plant.datterino_giallo, variables: {nome: Datterino}}
+
+        # ======================= DESTRA =======================
+        - type: vertical-stack
+          cards:
+            - type: custom:button-card
+              template: sezione
+              variables: {titolo: Piscina}
+            - type: custom:button-card
+              template: piscina
+              hold_action: {action: more-info}
+              tap_action:
+                action: fire-dom-event
+                browser_mod:
+                  service: browser_mod.popup
+                  data:
+                    style: "--popup-background-color: #0E1116; --popup-border-radius: 28px; --mdc-theme-surface: #0E1116; --primary-background-color: #0E1116; --ha-font-family-body: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-family: 'Plus Jakarta Sans', system-ui, sans-serif; --mdc-typography-headline6-font-weight: 800; --ha-font-weight-medium: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;"
+                    title: Piscina
+                    size: wide
+                    content: !include popup-piscina.yaml
+              styles:
+                card:
+                  - height: 168px
+            - type: grid
+              columns: 2
+              square: false
+              cards:
+                - type: custom:button-card
+                  template: azione_riga
+                  variables: {nome: Party 1 ora, icona: 'mdi:party-popper', colore: '#FF7EB6'}
+                  tap_action:
+                    action: call-service
+                    service: script.turn_on
+                    target: {entity_id: script.piscina_party_mode_1_ora}
+                    confirmation: {text: 'Avviare la modalità Party della piscina per 1 ora?'}
+                - type: custom:button-card
+                  template: azione_riga
+                  variables: {nome: Relax 1 ora, icona: 'mdi:spa-outline', colore: '#4FD1C5'}
+                  tap_action:
+                    action: call-service
+                    service: script.turn_on
+                    target: {entity_id: script.piscina_relax_mode_1_ora}
+                    confirmation: {text: 'Avviare la modalità Relax della piscina per 1 ora?'}
+
+            - type: custom:button-card
+              template: sezione
+              entity: binary_sensor.cancello_person_occupancy
+              triggers_update: [binary_sensor.porticato_person_occupancy, binary_sensor.piazzale_person_occupancy]
+              variables:
+                titolo: Varchi
+                nota: >
+                  [[[ var P = ['binary_sensor.cancello_person_occupancy', 'binary_sensor.porticato_person_occupancy',
+                               'binary_sensor.piazzale_person_occupancy'];
+                      var n = P.filter(function (p) { return states[p] && states[p].state === 'on'; }).length;
+                      return n === 0 ? 'nessuno rilevato fuori' : 'persone rilevate'; ]]]
+            - type: grid
+              columns: 2
+              square: false
+              cards:
+                - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.cancello_person_occupancy, variables: {nome: Cancello, tipo: presenza}}
+                - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.porticato_person_occupancy, variables: {nome: Porticato, tipo: presenza}}
+                - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.piazzale_person_occupancy, variables: {nome: Piazzale, tipo: presenza}}
+                - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.portagarage_contact, variables: {nome: Porta garage, tipo: porta}}

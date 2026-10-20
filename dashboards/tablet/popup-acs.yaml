@@ -1,0 +1,144 @@
+# ATTENZIONE: i [[[ ]]] scritti qui sono calcolati dalla tessera che apre il
+# popup, con la SUA entita': qui dentro usare sempre states['...'], mai entity.
+# Popup "Acqua calda" (si apre toccando la tessera in Energia).
+#   sinistra: serbatoio (4 sonde), solare termico
+#   destra:   ultime 24 ore (mini-graph-card), bollitore Ariston, soglie del solare
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        entity: sensor.centrale_termica_temperatura_puffer_alto
+        triggers_update:
+          - sensor.centrale_termica_temperatura_puffer_medioalto
+          - sensor.centrale_termica_temperatura_puffer_mediobasso
+          - sensor.centrale_termica_temperatura_puffer_basso
+        variables:
+          titolo: Serbatoio
+          nota: >
+            [[[ var S = ['alto', 'medioalto', 'mediobasso', 'basso'].map(function (k) {
+                  return Number((states['sensor.centrale_termica_temperatura_puffer_' + k] || {}).state); })
+                  .filter(function (v) { return !isNaN(v); });
+                if (!S.length) return '';
+                var m = S.reduce(function (a, b) { return a + b; }, 0) / S.length;
+                return 'media ' + m.toFixed(1).replace('.', ',') + '° · ' + S.length + ' sonde'; ]]]
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_puffer_alto, variables: {nome: Alto (prelievo), tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_puffer_medioalto, variables: {nome: Medio alto, tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_puffer_mediobasso, variables: {nome: Medio basso, tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.centrale_termica_temperatura_puffer_basso, variables: {nome: Basso, tipo: temperatura}}
+      - type: custom:button-card
+        template: sezione
+        entity: sensor.tempsolaretermico_temperatura_sonda_solare
+        triggers_update: [sensor.centrale_termica_temperatura_puffer_basso, input_number.dt_solare_accensione]
+        variables:
+          titolo: Solare termico
+          nota: >
+            [[[ var p = Number((states['sensor.tempsolaretermico_temperatura_sonda_solare'] || {}).state), b = Number((states['sensor.centrale_termica_temperatura_puffer_basso'] || {}).state);
+                var d = Number((states['input_number.dt_solare_accensione'] || {}).state);
+                if (isNaN(p) || isNaN(b)) return '';
+                var s = p - b;
+                return 'salto ' + (s > 0 ? '+' : '') + s.toFixed(1).replace('.', ',') + '°' +
+                  (isNaN(d) ? '' : ', parte da +' + d.toFixed(1).replace('.', ',') + '°'); ]]]
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.tempsolaretermico_temperatura_sonda_solare, variables: {nome: Pannelli, tipo: temperatura}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: switch.centrale_termica_pompa_solare_termico, variables: {nome: Circolatore, tipo: acceso, icona: 'mdi:pump', colore: '#4ade80', testo_on: In marcia, testo_off: Fermo}}
+      - type: custom:button-card
+        template: impostazione
+        entity: input_boolean.solare_nodered
+        variables: {nome: Automazione solare, nota: accende il circolatore col salto giusto, icona: 'mdi:solar-panel', colore: '#FFC94D'}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.dt_solare_accensione
+            variables: {nome: Accende a, icona: 'mdi:arrow-up-bold-outline', colore: '#FFC94D'}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.dt_solare_spegnimento
+            variables: {nome: Spegne a, icona: 'mdi:arrow-down-bold-outline', colore: '#5CB0FF'}
+
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Ultime 24 ore}
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.centrale_termica_temperatura_puffer_alto, name: Alto, color: '#FF6B3D'}
+          - {entity: sensor.centrale_termica_temperatura_puffer_basso, name: Basso, color: '#4FA3FF'}
+          - {entity: sensor.tempsolaretermico_temperatura_sonda_solare, name: Pannelli, color: '#FFC94D'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 150
+        show: {name: false, icon: false, state: true, legend: true, fill: false, labels: false}
+        card_mod:
+          style: |
+            ha-card {
+              background: #12161B !important;
+              border-radius: 22px !important;
+              border: 1px solid rgba(255,255,255,.035) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+              font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+              --primary-text-color: #EEF0F3;
+              --secondary-text-color: #8A93A0;
+            }
+      - type: custom:button-card
+        template: sezione
+        entity: water_heater.ariston_f0ad4e093e71_water_heater
+        variables:
+          titolo: Bollitore Ariston
+          nota: >
+            [[[ var M = {'Disabled': 'disattivato', 'Time Based': 'a orari', 'Always active': 'sempre attivo',
+                         'HC - HP': 'fasce orarie', 'HC - HP 40': 'fasce orarie 40°', 'Green Mode': 'green'};
+                var w = states['water_heater.ariston_f0ad4e093e71_water_heater'];
+                return w ? 'modalità ' + (M[w.state] || w.state) : ''; ]]]
+      # Il water_heater espone temperatura e setpoint come attributi: due tessere
+      # con template proprio per leggerli.
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:button-card
+            template: tessera
+            entity: water_heater.ariston_f0ad4e093e71_water_heater
+            hold_action: {action: more-info}
+            styles: {card: [height: 92px, padding: 14px 16px]}
+            custom_fields:
+              c: >
+                [[[ var w = states['water_heater.ariston_f0ad4e093e71_water_heater'];
+                    var v = w ? Number(w.attributes.current_temperature) : NaN;
+                    return '<div style="text-align:left;"><div style="font-size:13px;color:#8A93A0;">Temperatura</div>' +
+                      '<div style="font-size:22px;font-weight:800;color:#EEF0F3;margin-top:2px;">' +
+                      (isNaN(v) ? '--' : v + '°') + '</div></div>'; ]]]
+          - type: custom:button-card
+            template: tessera
+            entity: water_heater.ariston_f0ad4e093e71_water_heater
+            hold_action: {action: more-info}
+            tap_action: {action: more-info}
+            styles: {card: [height: 92px, padding: 14px 16px]}
+            custom_fields:
+              c: >
+                [[[ var w = states['water_heater.ariston_f0ad4e093e71_water_heater'];
+                    var v = w ? Number(w.attributes.temperature) : NaN;
+                    return '<div style="text-align:left;"><div style="font-size:13px;color:#8A93A0;">Setpoint</div>' +
+                      '<div style="font-size:22px;font-weight:800;color:#FF9F5A;margin-top:2px;">' +
+                      (isNaN(v) ? '--' : v + '°') + '</div></div>'; ]]]
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.ariston_electricity_consumption_for_water_last_month, variables: {nome: Consumo mese scorso, tipo: valore, unita: kWh, decimali: 1, icona: 'mdi:flash', colore: '#FFC94D'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.ariston_holiday_mode, variables: {nome: Vacanza, tipo: acceso, icona: 'mdi:beach', colore: '#5CB0FF', testo_on: Attiva, testo_off: 'No'}}

@@ -1,0 +1,531 @@
+# ===========================================================================
+# VISTA "Casa" (Panoramica) - home della dashboard Tablet
+# Si apre toccando il marchio in cima alla barra ed e' la prima vista.
+#   fascia di stato: luci, clima, sicurezza, energia, elettrodomestici
+#   avvisi: solo quelli presenti (template avviso, si nascondono da soli)
+#   sinistra (7/12): meteo adesso + 5 giorni, prossime 12 ore
+#   destra   (5/12): agenda Famiglia (calendar-card-pro), piscina
+# Fonti scelte dall'utente: previsioni MeteoRadar (sensor.previsioni_meteoradar,
+# template che chiama weather.get_forecasts ogni 30 minuti), temperatura e
+# pioggia dalla sua stazione Netatmo (modulo esterno e pluviometro "Salotto").
+# Il vento viene da MeteoRadar: la stazione non ha l'anemometro.
+# ===========================================================================
+- !include rail.yaml
+- !include testata.yaml
+
+- type: vertical-stack
+  view_layout: {grid-column: 3 / span 12, grid-row: 3}
+  cards:
+
+    # ---------------- FASCIA DI STATO ----------------
+    # Cinque pastiglie, ognuna porta alla vista dove si agisce.
+    - type: grid
+      columns: 5
+      square: false
+      cards:
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.luci_accese
+          tap_action: {action: navigate, navigation_path: stanze}
+          variables:
+            icona: mdi:lightbulb-group-outline
+            colore: '#F5B53D'
+            titolo: Luci
+            valore: >
+              [[[ var n = entity ? Number(entity.state) : 0; if (isNaN(n)) n = 0;
+                  return n === 0 ? 'tutte spente' : (n === 1 ? '1 accesa' : n + ' accese'); ]]]
+            attivo: '[[[ return entity && Number(entity.state) > 0; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: climate.condizionatore_salotto
+          triggers_update: [climate.condizionatore_luca, climate.condizionatore_sofia, climate.condizionatore_matrimoniale, climate.condizionatore_sottotetto]
+          tap_action: {action: navigate, navigation_path: stanze}
+          variables:
+            icona: mdi:air-conditioner
+            colore: '#5CB0FF'
+            titolo: Clima
+            valore: >
+              [[[ var C = ['climate.condizionatore_salotto', 'climate.condizionatore_luca', 'climate.condizionatore_sofia',
+                           'climate.condizionatore_matrimoniale', 'climate.condizionatore_sottotetto'];
+                  var a = 0; for (var i = 0; i < C.length; i++) { var s = states[C[i]];
+                    if (s && ['off', 'unavailable', 'unknown'].indexOf(s.state) < 0) a++; }
+                  return a === 0 ? 'tutto spento' : (a === 1 ? '1 acceso' : a + ' accesi'); ]]]
+            attivo: >
+              [[[ var C = ['climate.condizionatore_salotto', 'climate.condizionatore_luca', 'climate.condizionatore_sofia',
+                           'climate.condizionatore_matrimoniale', 'climate.condizionatore_sottotetto'];
+                  for (var i = 0; i < C.length; i++) { var s = states[C[i]];
+                    if (s && ['off', 'unavailable', 'unknown'].indexOf(s.state) < 0) return true; }
+                  return false; ]]]
+        - type: custom:button-card
+          template: stato_casa
+          entity: cover.cancello_pedonale
+          triggers_update: [cover.cancello_carrabile, binary_sensor.portagarage_contact, alarm_control_panel.allarme_allarme_area_1, alarm_control_panel.allarme_allarme_area_2]
+          tap_action: {action: navigate, navigation_path: accessi}
+          variables:
+            icona: mdi:shield-home-outline
+            colore: '#6FD39B'
+            titolo: Sicurezza
+            valore: >
+              [[[ var ap = 0;
+                  ['cover.cancello_pedonale', 'cover.cancello_carrabile'].forEach(function (c) {
+                    var s = states[c]; if (s && ['open', 'opening', 'closing'].indexOf(s.state) >= 0) ap++; });
+                  var g = states['binary_sensor.portagarage_contact']; if (g && g.state === 'on') ap++;
+                  var arm = 0;
+                  ['alarm_control_panel.allarme_allarme_area_1', 'alarm_control_panel.allarme_allarme_area_2'].forEach(function (a) {
+                    var s = states[a]; if (s && ['disarmed', 'unavailable', 'unknown'].indexOf(s.state) < 0) arm++; });
+                  return (ap === 0 ? 'tutto chiuso' : ap + (ap === 1 ? ' aperto' : ' aperti')) +
+                    (arm ? ' · allarme on' : ''); ]]]
+            attivo: '[[[ return false; ]]]'
+            allerta: >
+              [[[ var ap = false;
+                  ['cover.cancello_pedonale', 'cover.cancello_carrabile'].forEach(function (c) {
+                    var s = states[c]; if (s && ['open', 'opening', 'closing'].indexOf(s.state) >= 0) ap = true; });
+                  var g = states['binary_sensor.portagarage_contact']; return ap || (g && g.state === 'on'); ]]]
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.solaredge_i2_ac_power
+          triggers_update: [sensor.monitoring_accumulo_fv_jk_bms_state_of_charge]
+          tap_action: {action: navigate, navigation_path: energia}
+          variables:
+            icona: mdi:solar-power-variant-outline
+            colore: '#FFC94D'
+            titolo: Energia
+            valore: >
+              [[[ var w = entity ? Number(entity.state) : NaN;
+                  var b = states['sensor.monitoring_accumulo_fv_jk_bms_state_of_charge'];
+                  var sole = isNaN(w) || w < 20 ? 'niente sole' : (w / 1000).toFixed(1).replace('.', ',') + ' kW';
+                  return sole + (b && !isNaN(Number(b.state)) ? ' · ' + Math.round(Number(b.state)) + '%' : ''); ]]]
+            attivo: '[[[ return entity && Number(entity.state) > 20; ]]]'
+        - type: custom:button-card
+          template: stato_casa
+          entity: sensor.stato_lavatrice
+          triggers_update: [sensor.stato_lavastoviglie, sensor.stato_asciugatrice]
+          tap_action: {action: navigate, navigation_path: energia}
+          variables:
+            icona: mdi:washing-machine
+            colore: '#4FD1C5'
+            titolo: Elettrodomestici
+            valore: >
+              [[[ var N = {lavatrice: 'lavatrice', lavastoviglie: 'lavastoviglie', asciugatrice: 'asciugatrice'};
+                  var on = Object.keys(N).filter(function (k) {
+                    var s = states['sensor.stato_' + k]; return s && s.state === 'In funzione'; });
+                  return on.length === 0 ? 'tutto fermo' : (on.length === 1 ? N[on[0]] + ' attiva' : on.length + ' attivi'); ]]]
+            attivo: >
+              [[[ return ['lavatrice', 'lavastoviglie', 'asciugatrice'].some(function (k) {
+                    var s = states['sensor.stato_' + k]; return s && s.state === 'In funzione'; }); ]]]
+
+    # ---------------- AVVISI ----------------
+    # Compaiono solo quando c'e' qualcosa da fare; ognuno porta dove si interviene.
+    # Gli elettrodomestici "Finito" contano solo nelle 2 ore dopo la fine del
+    # ciclo: sensor.stato_* resta "Finito" per settimane.
+    # Una riga sola. horizontal-stack di HA, non layout-card: solo i contenitori
+    # di HA ascoltano card-visibility-changed, l'evento con cui button-card
+    # (hidden) dice di essere nascosta; layout-card la lascerebbe al suo posto.
+    - type: horizontal-stack
+      cards:
+        - type: custom:button-card
+          template: avviso
+          entity: alarm_control_panel.allarme_allarme_area_1
+          triggers_update: [alarm_control_panel.allarme_allarme_area_2]
+          tap_action: {action: navigate, navigation_path: accessi}
+          variables:
+            colore: '#FF8A80'
+            icona: mdi:alarm-light
+            testo: Allarme scattato
+            attivo: >
+              [[[ return ['alarm_control_panel.allarme_allarme_area_1', 'alarm_control_panel.allarme_allarme_area_2']
+                    .some(function (a) { return states[a] && states[a].state === 'triggered'; }); ]]]
+        - type: custom:button-card
+          template: avviso
+          entity: binary_sensor.portagarage_contact
+          tap_action: {action: navigate, navigation_path: accessi}
+          variables:
+            icona: mdi:garage-open-variant
+            testo: Porta garage aperta
+            attivo: '[[[ return entity && entity.state === "on"; ]]]'
+        - type: custom:button-card
+          template: avviso
+          entity: binary_sensor.cancellopedonale_contact
+          tap_action: {action: navigate, navigation_path: accessi}
+          variables:
+            icona: mdi:gate-open
+            testo: Cancello pedonale aperto
+            attivo: '[[[ return entity && entity.state === "on"; ]]]'
+        - type: custom:button-card
+          template: avviso
+          entity: vacuum.roborock_q_revo
+          triggers_update: [sensor.alfed_errore_aspirapolvere, sensor.alfed_errore_nella_base, binary_sensor.roborock_q_revo_mancanza_d_acqua]
+          tap_action: {action: navigate, navigation_path: stanze}
+          variables:
+            colore: '#FF8A80'
+            icona: mdi:robot-vacuum-alert
+            testo: >
+              [[[ var e = states['sensor.alfed_errore_aspirapolvere'], b = states['sensor.alfed_errore_nella_base'],
+                      w = states['binary_sensor.roborock_q_revo_mancanza_d_acqua'];
+                  if (w && w.state === 'on' || b && b.state === 'water_empty') return "Alfred: manca l'acqua";
+                  if (b && b.state === 'waste_water_tank_full') return 'Alfred: acqua sporca piena';
+                  if (e && e.state !== 'none' && e.state !== 'unknown') return 'Alfred è bloccato';
+                  return 'Alfred: controlla la base'; ]]]
+            attivo: >
+              [[[ var e = states['sensor.alfed_errore_aspirapolvere'], b = states['sensor.alfed_errore_nella_base'],
+                      w = states['binary_sensor.roborock_q_revo_mancanza_d_acqua'];
+                  return !!((e && ['none', 'unknown', 'unavailable'].indexOf(e.state) < 0) ||
+                    (b && ['ok', 'unknown', 'unavailable'].indexOf(b.state) < 0) || (w && w.state === 'on')); ]]]
+        - type: custom:button-card
+          template: avviso
+          entity: sensor.stato_lavatrice
+          triggers_update: [sensor.stato_lavastoviglie, sensor.stato_asciugatrice, sensor.time_2]
+          tap_action: {action: navigate, navigation_path: energia}
+          variables:
+            colore: '#4FD1C5'
+            icona: mdi:check-circle-outline
+            testo: >
+              [[[ var N = {lavatrice: 'Lavatrice finita', lavastoviglie: 'Lavastoviglie finita', asciugatrice: 'Asciugatrice finita'};
+                  var f = Object.keys(N).filter(function (k) { var s = states['sensor.stato_' + k];
+                    return s && s.state === 'Finito' && Date.now() - new Date(s.last_changed).getTime() < 2 * 3600 * 1000; });
+                  return f.length === 1 ? N[f[0]] : f.length + ' cicli finiti'; ]]]
+            attivo: >
+              [[[ return ['lavatrice', 'lavastoviglie', 'asciugatrice'].some(function (k) { var s = states['sensor.stato_' + k];
+                    return s && s.state === 'Finito' && Date.now() - new Date(s.last_changed).getTime() < 2 * 3600 * 1000; }); ]]]
+        - type: custom:button-card
+          template: avviso
+          entity: binary_sensor.monitoring_accumulo_fv_jk_bms_online_status
+          tap_action: {action: navigate, navigation_path: energia}
+          variables:
+            colore: '#FF8A80'
+            icona: mdi:bluetooth-off
+            testo: Batteria non collegata
+            attivo: '[[[ return !entity || entity.state !== "on"; ]]]'
+        - type: custom:button-card
+          template: avviso
+          entity: sensor.time_2
+          tap_action: {action: navigate, navigation_path: impostazioni}
+          variables:
+            icona: mdi:battery-alert-variant-outline
+            testo: >
+              [[[ var n = Object.keys(states).filter(function (k) { var s = states[k], v = Number(s.state);
+                    return s.attributes.device_class === 'battery' && s.attributes.unit_of_measurement === '%' && !isNaN(v) && v < 20; }).length;
+                  return n === 1 ? '1 batteria scarica' : n + ' batterie scariche'; ]]]
+            attivo: >
+              [[[ return Object.keys(states).some(function (k) { var s = states[k], v = Number(s.state);
+                    return s.attributes.device_class === 'battery' && s.attributes.unit_of_measurement === '%' && !isNaN(v) && v < 20; }); ]]]
+        - type: custom:button-card
+          template: avviso
+          entity: plant.basilico
+          triggers_update: [plant.aneto, plant.prezzemolo, plant.ciliegino_rosso, plant.datterino_giallo]
+          tap_action: {action: navigate, navigation_path: esterno}
+          variables:
+            colore: '#6FD39B'
+            icona: mdi:sprout-outline
+            testo: >
+              [[[ var n = ['plant.basilico', 'plant.aneto', 'plant.prezzemolo', 'plant.ciliegino_rosso', 'plant.datterino_giallo']
+                    .filter(function (p) { return states[p] && states[p].state === 'problem'; }).length;
+                  return n === 1 ? '1 pianta da curare' : n + ' piante da curare'; ]]]
+            attivo: >
+              [[[ return ['plant.basilico', 'plant.aneto', 'plant.prezzemolo', 'plant.ciliegino_rosso', 'plant.datterino_giallo']
+                    .some(function (p) { return states[p] && states[p].state === 'problem'; }); ]]]
+        - type: custom:button-card
+          template: avviso
+          entity: sensor.time_2
+          tap_action: {action: navigate, navigation_path: impostazioni}
+          variables:
+            colore: '#5CB0FF'
+            icona: mdi:package-up
+            testo: >
+              [[[ var n = Object.keys(states).filter(function (k) { return k.indexOf('update.') === 0 && states[k].state === 'on'; }).length;
+                  return n === 1 ? '1 aggiornamento' : n + ' aggiornamenti'; ]]]
+            attivo: '[[[ return Object.keys(states).some(function (k) { return k.indexOf("update.") === 0 && states[k].state === "on"; }); ]]]'
+
+    # ---------------- DUE COLONNE ----------------
+    - type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr)
+        grid-gap: 14px
+        margin: 0
+        padding: 0
+      cards:
+
+        # ======================= SINISTRA: METEO =======================
+        - type: vertical-stack
+          cards:
+            - type: custom:button-card
+              template: sezione
+              entity: sensor.meteoradar_trend_description
+              variables:
+                titolo: Meteo
+                nota: '[[[ return entity && entity.state ? "tendenza: " + entity.state : ""; ]]]'
+
+            # Adesso + prossimi 5 giorni. L'illustrazione e' disegnata per
+            # condizione (sole, nuvole, pioggia, temporale, neve, nebbia, luna).
+            - type: custom:button-card
+              template: tessera
+              entity: weather.meteoradar_weather
+              triggers_update:
+                - sensor.previsioni_meteoradar
+                - sensor.casa_rotondo_salotto_esterno_temperature
+                - sensor.casa_rotondo_salotto_esterno_humidity
+                - sensor.salotto_salotto_salotto_pluviometro_rain_today
+                - sensor.meteoradar_current_wind_speed
+              hold_action:
+                action: more-info
+              styles:
+                card:
+                  - height: 292px
+                  - padding: 20px 22px
+                  - background: 'radial-gradient(120% 90% at 0% 0%, rgba(255,201,77,.10), #12161B 55%)'
+              custom_fields:
+                c: >
+                  [[[
+                    var num = function (id) {
+                      var e = states[id];
+                      if (!e || e.state === 'unavailable' || e.state === 'unknown' || e.state === '') return null;
+                      var v = Number(e.state); return isNaN(v) ? null : v;
+                    };
+                    var CIELO = {'clear-night': 'Sereno', 'cloudy': 'Nuvoloso', 'fog': 'Nebbia',
+                      'hail': 'Grandine', 'lightning': 'Temporale', 'lightning-rainy': 'Temporale',
+                      'partlycloudy': 'Poco nuvoloso', 'pouring': 'Pioggia forte', 'rainy': 'Pioggia',
+                      'snowy': 'Neve', 'snowy-rainy': 'Nevischio', 'sunny': 'Sereno', 'windy': 'Vento',
+                      'windy-variant': 'Vento', 'exceptional': 'Eccezionale'};
+                    // Illustrazioni meteo (viewBox 40x40), le stesse della testata.
+                    var arte = function (cond, px) {
+                      /* Icone meteo realistiche: gradienti in D, aggiunti a ogni svg 40x40. */
+                      var D = '<defs><radialGradient id="mSole" cx="40%" cy="38%" r="65%"><stop offset="0" stop-color="#FFFBEA"/>' +
+                        '<stop offset=".45" stop-color="#FFD45C"/><stop offset="1" stop-color="#F59E0B"/></radialGradient>' +
+                        '<radialGradient id="mLuna" cx="38%" cy="35%" r="70%"><stop offset="0" stop-color="#F1F5F9"/>' +
+                        '<stop offset=".6" stop-color="#C9D3E3"/><stop offset="1" stop-color="#8A96AB"/></radialGradient>' +
+                        '<linearGradient id="mNube" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/>' +
+                        '<stop offset=".6" stop-color="#D5DCE6"/><stop offset="1" stop-color="#9AA7B8"/></linearGradient>' +
+                        '<linearGradient id="mNubeScura" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B8C2CF"/>' +
+                        '<stop offset="1" stop-color="#5B6676"/></linearGradient>' +
+                        '<linearGradient id="mGoccia" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0FF"/>' +
+                        '<stop offset="1" stop-color="#2F86E0"/></linearGradient>' +
+                        '<linearGradient id="mLampo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3B0"/>' +
+                        '<stop offset="1" stop-color="#F59E0B"/></linearGradient></defs>' +
+                        '<style>.mRaggi{transform-origin:20px 18px;animation:mGira 30s linear infinite}' +
+                        '.mCade{animation:mCade 1.4s linear infinite}.mCade2{animation:mCade 1.4s linear .45s infinite}' +
+                        '.mCade3{animation:mCade 1.4s linear .9s infinite}.mLuce{animation:mLuce 2.8s ease-in-out infinite}' +
+                        '@keyframes mGira{to{transform:rotate(360deg)}}' +
+                        '@keyframes mCade{0%{transform:translateY(-3px);opacity:0}30%{opacity:1}100%{transform:translateY(4px);opacity:0}}' +
+                        '@keyframes mLuce{0%,100%{opacity:1}50%{opacity:.55}}' +
+                        '@media (prefers-reduced-motion:reduce){.mRaggi,.mCade,.mCade2,.mCade3,.mLuce{animation:none}}</style>';
+                      var raggi = '';
+                      for (var ri = 0; ri < 8; ri++)
+                        raggi += '<path d="M20 3.5 L21.6 8 L18.4 8 Z" fill="#FFD45C" transform="rotate(' + (ri * 45) + ' 20 18)"/>';
+                      var sole = '<g class="mRaggi">' + raggi + '</g>' +
+                        '<circle cx="20" cy="18" r="7.5" fill="url(#mSole)" style="filter:drop-shadow(0 0 3px rgba(255,201,77,.8))"/>';
+                      var luna = '<circle cx="20" cy="20" r="11" fill="url(#mLuna)" style="filter:drop-shadow(0 0 3px rgba(201,211,255,.6))"/>' +
+                        '<circle cx="16" cy="17" r="2.6" fill="#9AA6BA" opacity=".55"/><circle cx="24" cy="24" r="1.8" fill="#9AA6BA" opacity=".5"/>' +
+                        '<circle cx="23" cy="14" r="1.3" fill="#9AA6BA" opacity=".45"/>';
+                      var nuvola = function (x, y, c) {
+                        var scura = c === '#8E9BAB' || c === '#7C8796';
+                        return '<path transform="translate(' + x + ',' + y + ')" d="M8 22h17a6 6 0 0 0 ' +
+                          '0-12 8 8 0 0 0-15-1A6.5 6.5 0 0 0 8 22z" fill="url(#' + (scura ? 'mNubeScura' : 'mNube') + ')" ' +
+                          'style="filter:drop-shadow(0 1.5px 1.5px rgba(0,0,0,.45))"/>';
+                      };
+                      var goccia = function (x, cl) { return '<path class="' + cl + '" d="M' + x + ' 30 q2.2 3.2 0 5.2 q-2.2-2 0-5.2z" fill="url(#mGoccia)"/>'; };
+                      var gocce = goccia(14, 'mCade') + goccia(21, 'mCade2') + goccia(28, 'mCade3');
+                      var fulmine = '<path class="mLuce" d="M22 27l-4 7h4l-2 6 7-9h-4l2-4z" fill="url(#mLampo)" ' +
+                        'style="filter:drop-shadow(0 0 2.5px #FFC94D)"/>';
+                      var fiocchi = '<g fill="#F4F8FF" style="filter:drop-shadow(0 0 1.5px #fff)"><circle class="mCade" cx="13" cy="34" r="2"/>' +
+                        '<circle class="mCade2" cx="21" cy="36" r="2"/><circle class="mCade3" cx="29" cy="34" r="2"/></g>';
+                      var a;
+                      if (cond === 'sunny') a = sole;
+                      else if (cond === 'clear-night') a = luna;
+                      else if (cond === 'partlycloudy') a = sole + nuvola(6, 6, '#B8C2CF');
+                      else if (cond === 'rainy' || cond === 'pouring') a = nuvola(2, 0, '#8E9BAB') + gocce;
+                      else if (cond === 'lightning' || cond === 'lightning-rainy') a = nuvola(2, 0, '#7C8796') + fulmine;
+                      else if (cond === 'snowy' || cond === 'snowy-rainy' || cond === 'hail') a = nuvola(2, 0, '#B8C2CF') + fiocchi;
+                      else if (cond === 'fog') a = '<g stroke="url(#mNube)" stroke-width="3" stroke-linecap="round" opacity=".85">' +
+                        '<path d="M6 14h28M10 21h24M6 28h26"/></g>';
+                      else a = nuvola(2, 4, '#B8C2CF');
+                      return '<svg width="' + px + '" height="' + px + '" viewBox="0 0 40 40">' + D + a + '</svg>';
+                    };
+                    var gr = function (v, d) { return v === null || v === undefined ? '--'
+                      : Number(v).toFixed(d || 0).replace('.', ',') + '°'; };
+                    var ora = function (iso) { if (!iso) return '--';
+                      var d = new Date(iso); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
+
+                    var w = entity;
+                    var cond = w ? w.state : '';
+                    var prev = states['sensor.previsioni_meteoradar'];
+                    var giorni = prev && prev.attributes.giornaliere ? prev.attributes.giornaliere : [];
+                    var oggi = giorni[0] || {};
+                    var fuori = num('sensor.casa_rotondo_salotto_esterno_temperature');
+                    var umid = num('sensor.casa_rotondo_salotto_esterno_humidity');
+                    var pioggia = num('sensor.salotto_salotto_salotto_pluviometro_rain_today');
+                    var vento = num('sensor.meteoradar_current_wind_speed');
+                    var perc = num('sensor.meteoradar_current_apparent_temperature');
+                    var alba = states['sensor.meteoradar_current_sunrise'];
+                    var tram = states['sensor.meteoradar_current_sunset'];
+
+                    var dato = function (icona, col, etichetta, valore) {
+                      return '<div style="display:flex;align-items:center;gap:10px;text-align:left;">' +
+                        '<ha-icon icon="' + icona + '" style="--mdc-icon-size:20px;width:20px;height:20px;' +
+                        'display:flex;flex:none;color:' + col + ';"></ha-icon><div style="flex:1;min-width:0;' +
+                        'text-align:left;"><div style="font-size:12px;' +
+                        'color:#8A93A0;">' + etichetta + '</div><div style="font-size:16px;font-weight:700;' +
+                        'color:#EEF0F3;font-variant-numeric:tabular-nums;">' + valore + '</div></div></div>';
+                    };
+                    var dettagli =
+                      dato('mdi:thermometer-lines', '#FF9F5A', 'Min / max', gr(oggi.templow) + ' / ' + gr(oggi.temperature)) +
+                      dato('mdi:water-percent', '#5CB0FF', 'Umidità', umid === null ? '--' : Math.round(umid) + '%') +
+                      dato('mdi:weather-windy', '#A0AEC0', 'Vento', vento === null ? '--' : Math.round(vento * 3.6) + ' km/h') +
+                      dato('mdi:weather-pouring', '#5CB0FF', 'Pioggia oggi', pioggia === null ? '--'
+                        : pioggia.toFixed(1).replace('.', ',') + ' mm') +
+                      dato('mdi:weather-sunset-up', '#FFC94D', 'Alba', ora(alba && alba.state)) +
+                      dato('mdi:weather-sunset-down', '#FF9F5A', 'Tramonto', ora(tram && tram.state));
+
+                    var GG = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+                    var prossimi = '';
+                    for (var i = 1; i < Math.min(6, giorni.length); i++) {
+                      var g = giorni[i], d = new Date(g.datetime);
+                      var pp = g.precipitation_probability;
+                      prossimi += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;' +
+                        'gap:4px;padding:8px 0;border-radius:16px;background:#1A2028;">' +
+                        '<span style="font-size:13px;font-weight:700;color:#A9B1BC;">' + GG[d.getDay()] + '</span>' +
+                        arte(g.condition, 30) +
+                        '<span style="font-size:14px;font-weight:700;color:#EEF0F3;">' + gr(g.temperature) +
+                        ' <span style="color:#6B7480;font-weight:600;">' + gr(g.templow) + '</span></span>' +
+                        '<span style="font-size:12px;font-weight:700;color:' + (pp >= 40 ? '#5CB0FF' : '#5B6470') + ';">' +
+                        '<ha-icon icon="mdi:water" style="--mdc-icon-size:12px;width:12px;height:12px;' +
+                        'display:inline-flex;vertical-align:-1px;"></ha-icon>' + (pp == null ? '--' : Math.round(pp) + '%') +
+                        '</span></div>';
+                    }
+
+                    return '<div style="display:flex;flex-direction:column;justify-content:space-between;' +
+                      'height:100%;text-align:left;">' +
+                      '<div style="display:flex;align-items:center;gap:18px;">' + arte(cond, 92) +
+                      '<div style="flex:none;"><div style="font-size:58px;font-weight:800;letter-spacing:-.04em;' +
+                      'line-height:1;color:#EEF0F3;font-variant-numeric:tabular-nums;">' + gr(fuori, 1) + '</div>' +
+                      '<div style="font-size:16px;color:#A9B1BC;margin-top:6px;">' + (CIELO[cond] || cond) +
+                      (perc === null ? '' : ' · percepita ' + gr(perc)) + '</div></div>' +
+                      '<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;' +
+                      'margin-left:12px;">' + dettagli + '</div></div>' +
+                      '<div style="display:flex;gap:8px;">' + prossimi + '</div></div>';
+                  ]]]
+
+            - type: custom:button-card
+              template: sezione
+              variables: {titolo: Prossimi 3 giorni, nota: 'ogni 6 ore: temperatura e probabilità di pioggia'}
+            # Grafico disegnato: linea della temperatura, barre della pioggia.
+            - type: custom:button-card
+              template: tessera
+              entity: sensor.previsioni_meteoradar
+              styles:
+                card:
+                  - height: 140px
+                  - padding: 14px 16px 10px
+              custom_fields:
+                c: >
+                  [[[
+                    var ore = entity && entity.attributes.ogni_6_ore ? entity.attributes.ogni_6_ore : [];
+                    if (!ore.length) return '<div style="color:#8A93A0;font-size:14px;">Previsioni non ancora disponibili</div>';
+                    var W = 680, H = 120, L = 20, R = 20, TOP = 24, BASE = 96;
+                    var n = ore.length, passo = (W - L - R) / (n - 1);
+                    var t = ore.map(function (o) { return Number(o.temperature); });
+                    var tmin = Math.min.apply(null, t), tmax = Math.max.apply(null, t);
+                    if (tmax - tmin < 4) { var m = (tmax + tmin) / 2; tmin = m - 2; tmax = m + 2; }
+                    var y = function (v) { return TOP + (1 - (v - tmin) / (tmax - tmin)) * (BASE - 30 - TOP); };
+                    var barre = '', etichette = '', punti = '', linea = '', area = '';
+                    for (var i = 0; i < n; i++) {
+                      var x = L + i * passo, o = ore[i], p = Number(o.precipitation_probability || 0);
+                      var h = Math.max(2, p / 100 * 34);
+                      barre += '<rect x="' + (x - 9) + '" y="' + (BASE - h) + '" width="18" height="' + h +
+                        '" rx="4" fill="' + (p >= 40 ? '#5CB0FF' : '#2A3A4F') + '"/>';
+                      if (p >= 20) barre += '<text x="' + x + '" y="' + (BASE - h - 4) + '" text-anchor="middle" ' +
+                        'font-size="11" font-weight="700" fill="#5CB0FF">' + Math.round(p) + '%</text>';
+                      var d = new Date(o.datetime);
+                      // A mezzanotte il giorno della settimana, altrimenti l'ora.
+                      var GG = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+                      var mezzanotte = d.getHours() === 0;
+                      etichette += '<text x="' + x + '" y="' + (H - 4) + '" text-anchor="middle" font-size="12" ' +
+                        'font-weight="' + (mezzanotte ? '700' : '400') + '" fill="' + (mezzanotte ? '#EEF0F3' : '#8A93A0') +
+                        '">' + (mezzanotte ? GG[d.getDay()] : ('0' + d.getHours()).slice(-2)) + '</text>';
+                      if (mezzanotte && i) barre += '<line x1="' + x + '" y1="' + TOP + '" x2="' + x + '" y2="' + BASE +
+                        '" stroke="#232A33" stroke-width="1.5" stroke-dasharray="3 4"/>';
+                      linea += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y(t[i]).toFixed(1);
+                      if (true) {
+                        punti += '<circle cx="' + x + '" cy="' + y(t[i]) + '" r="3.5" fill="#FF9F5A"/>' +
+                          '<text x="' + x + '" y="' + (y(t[i]) - 9) + '" text-anchor="middle" font-size="12" ' +
+                          'font-weight="700" fill="#EEF0F3">' + Math.round(t[i]) + '°</text>';
+                      }
+                    }
+                    area = linea + ' L ' + (L + (n - 1) * passo) + ' ' + (BASE - 30) + ' L ' + L + ' ' + (BASE - 30) + ' Z';
+                    return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:100%;display:block;">' +
+                      '<defs><linearGradient id="caldo" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" ' +
+                      'stop-color="#FF9F5A" stop-opacity=".28"/><stop offset="100%" stop-color="#FF9F5A" ' +
+                      'stop-opacity="0"/></linearGradient></defs>' +
+                      '<path d="' + area + '" fill="url(#caldo)"/>' +
+                      '<path d="' + linea + '" fill="none" stroke="#FF9F5A" stroke-width="2.5" ' +
+                      'stroke-linejoin="round" stroke-linecap="round"/>' + punti + barre + etichette + '</svg>';
+                  ]]]
+
+        # ======================= DESTRA: AGENDA E PISCINA =======================
+        - type: vertical-stack
+          cards:
+            - type: custom:button-card
+              template: sezione
+              variables: {titolo: Agenda, nota: calendario Famiglia}
+            # calendar-card-pro (HACS). Solo il calendario Famiglia, come chiesto;
+            # il meteo del giorno viene da MeteoRadar.
+            - type: custom:calendar-card-pro
+              entities:
+                - entity: calendar.famiglia
+                  accent_color: '#B79CFF'
+              days_to_show: 14
+              compact_events_to_show: 6
+              language: it
+              height: 258px
+              background_color: '#12161B'
+              accent_color: '#B79CFF'
+              vertical_line_width: 3px
+              event_background_opacity: 10
+              day_spacing: 12px
+              event_spacing: 6px
+              show_month: true
+              show_location: false
+              show_countdown: true
+              show_end_time: false
+              today_indicator: dot
+              today_indicator_color: '#B79CFF'
+              weekday_font_size: 12px
+              weekday_color: '#8A93A0'
+              day_font_size: 22px
+              day_color: '#EEF0F3'
+              month_font_size: 11px
+              month_color: '#8A93A0'
+              today_day_color: '#B79CFF'
+              event_font_size: 15px
+              event_color: '#EEF0F3'
+              time_font_size: 13px
+              time_color: '#8A93A0'
+              empty_day_text: Niente in programma
+              weather:
+                entity: weather.meteoradar_weather
+                position: date
+                date:
+                  show_conditions: true
+                  show_high_temp: true
+                  show_low_temp: false
+              card_mod:
+                style: |
+                  ha-card {
+                    border-radius: 22px !important;
+                    border: 1px solid rgba(255,255,255,.035) !important;
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+                    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+                    padding: 6px 4px;
+                    box-sizing: border-box;
+                  }
+
+            - type: custom:button-card
+              template: sezione
+              variables: {titolo: Piscina}
+            # Vasca disegnata (template piscina): tocca per la vista Esterno.
+            - type: custom:button-card
+              template: piscina
+              tap_action: {action: navigate, navigation_path: esterno}
+              styles:
+                card:
+                  - height: 140px

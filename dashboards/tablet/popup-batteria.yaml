@@ -1,0 +1,187 @@
+# ATTENZIONE: i [[[ ]]] scritti qui sono calcolati dalla tessera che apre il
+# popup, con la SUA entita': qui dentro usare sempre states['...'], mai entity.
+# Popup "Batteria" (si apre toccando la tessera in Energia). Dati del JK-BMS
+# letti da ESPHome (nodo "Monitoring Accumulo FV") e dell'inverter MagicBox.
+#   sinistra: adesso, celle, temperature
+#   destra:   ultime 24 ore, energia, inverter e collegamento
+# Il collegamento BLE al BMS va e viene: le tessere mostrano "--" quando un
+# valore manca, il popup non si rompe.
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-gap: 20px
+  margin: '0'
+  padding: 0 4px 8px
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables:
+          titolo: Adesso
+          nota: >
+            [[[ var c = states['sensor.monitoring_accumulo_fv_jk_bms_charge_status'];
+                var i = states['sensor.monitoring_accumulo_fv_magicbox_stato_inverter'];
+                var T = {Bulk: 'carica piena (bulk)', Absorption: 'assorbimento', Float: 'mantenimento'};
+                return [i && i.state ? 'inverter: ' + i.state.toLowerCase() : '',
+                        c && c.state ? 'BMS: ' + (T[c.state] || c.state.toLowerCase()) : '']
+                  .filter(function (x) { return x; }).join(' · '); ]]]
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_state_of_charge, variables: {nome: Carica, tipo: valore, unita: '%', icona: 'mdi:battery-high', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_power, variables: {nome: Potenza, tipo: valore, unita: W, icona: 'mdi:flash', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_total_voltage, variables: {nome: Tensione, tipo: valore, unita: V, decimali: 2, icona: 'mdi:sine-wave', colore: '#A0AEC0'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_current, variables: {nome: Corrente, tipo: valore, unita: A, decimali: 1, icona: 'mdi:current-dc', colore: '#A0AEC0'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_capacity_remaining, variables: {nome: Capacità residua, tipo: valore, unita: 'Ah', icona: 'mdi:battery-arrow-down-outline', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_state_of_health, variables: {nome: Salute, tipo: valore, unita: '%', icona: 'mdi:heart-pulse', colore: '#6FD39B'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_charging_cycles, variables: {nome: Cicli di carica, tipo: valore, icona: 'mdi:sync', colore: '#B79CFF'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_total_runtime_formatted, variables: {nome: In servizio da, tipo: valore, icona: 'mdi:clock-outline', colore: '#A0AEC0'}}
+
+      - type: custom:button-card
+        template: sezione
+        variables:
+          titolo: Celle
+          nota: >
+            [[[ var d = Number((states['sensor.monitoring_accumulo_fv_jk_bms_delta_cell_voltage'] || {}).state);
+                return isNaN(d) ? '' : 'differenza ' + Math.round(d * 1000) + ' mV' +
+                  (d * 1000 <= 30 ? ', ben bilanciate' : (d * 1000 <= 80 ? ', da tenere d\'occhio' : ', sbilanciate')); ]]]
+      # Pacco da 16 celle disegnato. Il BMS espone solo la cella piu' bassa e la
+      # piu' alta (numero e tensione): quelle due sono evidenziate, le altre no.
+      - type: custom:button-card
+        template: tessera
+        entity: sensor.monitoring_accumulo_fv_jk_bms_delta_cell_voltage
+        triggers_update:
+          - sensor.monitoring_accumulo_fv_jk_bms_min_cell_voltage
+          - sensor.monitoring_accumulo_fv_jk_bms_max_cell_voltage
+          - sensor.monitoring_accumulo_fv_jk_bms_min_voltage_cell
+          - sensor.monitoring_accumulo_fv_jk_bms_max_voltage_cell
+          - sensor.monitoring_accumulo_fv_jk_bms_average_cell_voltage
+          - binary_sensor.monitoring_accumulo_fv_jk_bms_balancing
+          - sensor.monitoring_accumulo_fv_jk_bms_balancing_current
+        hold_action: {action: more-info}
+        styles:
+          card:
+            - height: 168px
+            - padding: 14px 16px
+        custom_fields:
+          c: >
+            [[[
+              var n = function (id) { var e = states[id]; var v = e ? Number(e.state) : NaN; return isNaN(v) ? null : v; };
+              var vmin = n('sensor.monitoring_accumulo_fv_jk_bms_min_cell_voltage');
+              var vmax = n('sensor.monitoring_accumulo_fv_jk_bms_max_cell_voltage');
+              var vmed = n('sensor.monitoring_accumulo_fv_jk_bms_average_cell_voltage');
+              var cmin = n('sensor.monitoring_accumulo_fv_jk_bms_min_voltage_cell');
+              var cmax = n('sensor.monitoring_accumulo_fv_jk_bms_max_voltage_cell');
+              var bil = states['binary_sensor.monitoring_accumulo_fv_jk_bms_balancing'];
+              var ib = n('sensor.monitoring_accumulo_fv_jk_bms_balancing_current');
+              var soc = n('sensor.monitoring_accumulo_fv_jk_bms_state_of_charge');
+              var v3 = function (v) { return v === null ? '--' : v.toFixed(3).replace('.', ',') + ' V'; };
+              // Le celle sono numerate da 1 a 16 (il BMS conta da 1).
+              var celle = '';
+              var liv = soc === null ? 0 : soc / 100;
+              for (var i = 1; i <= 16; i++) {
+                var x = 6 + (i - 1) * 41, isMin = i === cmin, isMax = i === cmax;
+                var col = isMin ? '#5CB0FF' : (isMax ? '#FF9F5A' : '#4FD1C5');
+                var h = 50 * liv;
+                celle += '<rect x="' + x + '" y="10" width="35" height="56" rx="6" fill="#1A2028" stroke="' +
+                  (isMin || isMax ? col : '#2A323D') + '" stroke-width="' + (isMin || isMax ? 2.5 : 1.5) + '"/>' +
+                  '<rect x="' + (x + 6) + '" y="5" width="23" height="6" rx="2" fill="#2A323D"/>' +
+                  '<rect x="' + (x + 4) + '" y="' + (63 - h).toFixed(1) + '" width="27" height="' + h.toFixed(1) +
+                  '" rx="3" fill="' + col + '" opacity="' + (isMin || isMax ? '.9' : '.45') + '"/>' +
+                  '<text x="' + (x + 17.5) + '" y="84" text-anchor="middle" font-size="11" font-weight="' +
+                  (isMin || isMax ? '800' : '500') + '" fill="' + (isMin || isMax ? col : '#6B7480') + '">' + i + '</text>';
+              }
+              var svg = '<svg viewBox="0 0 664 90" style="width:100%;display:block;">' + celle + '</svg>';
+              var dato = function (et, v, col) {
+                return '<div><div style="font-size:12px;color:#8A93A0;">' + et + '</div><div style="font-size:15px;' +
+                  'font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums;">' + v + '</div></div>';
+              };
+              var bOn = bil && bil.state === 'on';
+              return '<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;' +
+                'text-align:left;">' + svg +
+                '<div style="display:flex;justify-content:space-between;gap:8px;">' +
+                dato('Più bassa' + (cmin ? ' (n. ' + cmin + ')' : ''), v3(vmin), '#5CB0FF') +
+                dato('Media', v3(vmed), '#EEF0F3') +
+                dato('Più alta' + (cmax ? ' (n. ' + cmax + ')' : ''), v3(vmax), '#FF9F5A') +
+                dato('Bilanciamento', bOn ? 'attivo' + (ib === null ? '' : ' · ' + ib.toFixed(2).replace('.', ',') + ' A') : 'fermo',
+                     bOn ? '#6FD39B' : '#8A93A0') + '</div></div>';
+            ]]]
+
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Temperature}
+      - type: grid
+        columns: 4
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_temperature_sensor_1, variables: {nome: Sonda 1, tipo: valore, unita: '°', decimali: 1, icona: 'mdi:thermometer', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_temperature_sensor_2, variables: {nome: Sonda 2, tipo: valore, unita: '°', decimali: 1, icona: 'mdi:thermometer', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_temperature_sensor_3, variables: {nome: Sonda 3, tipo: valore, unita: '°', decimali: 1, icona: 'mdi:thermometer', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_jk_bms_power_tube_temperature, variables: {nome: MOSFET, tipo: valore, unita: '°', decimali: 1, icona: 'mdi:thermometer', colore: '#4FD1C5'}}
+
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Ultime 24 ore}
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.monitoring_accumulo_fv_jk_bms_state_of_charge, name: Carica, color: '#4FD1C5'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 100
+        lower_bound: 0
+        upper_bound: 100
+        show: {name: false, icon: false, state: true, legend: false, fill: fade, labels: false}
+        card_mod: &grafico
+          style: |
+            ha-card {
+              background: #12161B !important;
+              border-radius: 22px !important;
+              border: 1px solid rgba(255,255,255,.035) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+              font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+              --primary-text-color: #EEF0F3;
+              --secondary-text-color: #8A93A0;
+            }
+      - type: custom:mini-graph-card
+        entities:
+          - {entity: sensor.monitoring_accumulo_fv_jk_bms_power, name: Potenza, color: '#B79CFF'}
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 3
+        height: 100
+        show: {name: false, icon: false, state: true, legend: false, fill: fade, labels: false}
+        card_mod: *grafico
+
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Energia}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.batteria_caricata_oggi, variables: {nome: Caricata oggi, tipo: valore, unita: kWh, decimali: 1, icona: 'mdi:battery-plus-outline', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.batteria_scaricata_oggi, variables: {nome: Scaricata oggi, tipo: valore, unita: kWh, decimali: 1, icona: 'mdi:battery-minus-outline', colore: '#FF9F5A'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.energia_batteria_caricata, variables: {nome: Caricata in totale, tipo: valore, unita: kWh, icona: 'mdi:sigma', colore: '#4FD1C5'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.energia_batteria_scaricata, variables: {nome: Scaricata in totale, tipo: valore, unita: kWh, icona: 'mdi:sigma', colore: '#FF9F5A'}}
+
+      - type: custom:button-card
+        template: sezione
+        variables: {titolo: Inverter e collegamento}
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.monitoring_accumulo_fv_magicbox_stato_inverter, variables: {nome: Inverter, tipo: valore, icona: 'mdi:sine-wave', colore: '#FFC94D'}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: binary_sensor.monitoring_accumulo_fv_jk_bms_online_status, variables: {nome: BMS, tipo: acceso, icona: 'mdi:bluetooth-connect', colore: '#5CB0FF', testo_on: Collegato, testo_off: Scollegato}}
+          - {type: 'custom:button-card', template: dato_stanza, entity: sensor.intercapedine_monitoring_accumulo_fv_segnale_wifi, variables: {nome: WiFi, tipo: valore, unita: dBm, icona: 'mdi:wifi', colore: '#A0AEC0'}}
+          - type: custom:button-card
+            template: impostazione_valore
+            entity: input_number.soglia_minimo_accumulo_automazioni
+            styles: {card: [height: 92px]}
+            variables: {nome: Minimo automazioni, icona: 'mdi:battery-50', colore: '#4FD1C5'}
