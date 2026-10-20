@@ -128,3 +128,7 @@ node valida.mjs dashboard-tablet              # controlla che la dashboard live 
 ```
 
 Con l'anteprima puoi provare una modifica sul vero HA senza toccare il pannello a parete.
+
+## Licenza
+
+[MIT](LICENSE).
